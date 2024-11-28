@@ -1,0 +1,19 @@
+; Unfy Framework Configuration
+
+web_base_path = /
+
+[debug]
+display_errors = 1
+display_startup_errors = 1
+error_reporting = E_ALL
+
+[database]
+; sqlite
+type = sqlite
+path = unfy.db
+; mysql
+;type = mysql
+;name = unfy
+;host = localhost
+;port = 3306
+;socket = /var/run/mysqld/mysqld.sock
