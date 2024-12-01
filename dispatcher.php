@@ -11,6 +11,25 @@ require_once('classes/database.php');
 require_once('classes/ustr.php');
 require_once('classes/rows.php');
 require_once('classes/row.php');
+require_once('classes/controler.php');
+
+//*********************** Controler Factory
+function ControlerFactory($controler){
+    $sites = array();
+    if (null != @Unfy::$site['name']){
+        $sites[] = Unfy::$site['name'];
+    }
+    $sites[] = 'base';
+    foreach ($sites as $site){
+        $path = UStr::toLower("./sites/{$site}/controlers/{$controler}.php");
+        if (file_exists($path)){
+            require_once($path);
+            $controler = new ('Ctr_'.$controler)();
+            break;
+        }
+    }
+    return $controler;
+}
 
 //************************* Autoloader
 spl_autoload_register(function($classname){
@@ -127,32 +146,27 @@ session_start();
 $input = array_merge( (is_array(@$_SESSION['messages'])?$_SESSION['messages']:array()), $_POST, $_GET);
 $_SESSION['messages'] = Array();
 
-$c = $_SERVER['REQUEST_URI'];
-if (!UStr::starts_with($c, Config::getval('base_path'))){
+$c = 'Base';
+$args = $_SERVER['REQUEST_URI'];
+if (!UStr::starts_with($args, Config::getval('base_path'))){
     throw new Exception_404();
 } else {
-    $c = UStr::substr($c, UStr::len(Config::getval('base_path')));
+    $args = UStr::substr($args, UStr::len(Config::getval('base_path')));
 }
-hdd($c);
-
-hdd($_SERVER);
-
-$sites = array();
-if (null != @Unfy::$site['name']){
-    $sites[] = Unfy::$site['name'];
+while (UStr::ends_with($args, '/')){
+    $args = UStr::substr($args, 0, UStr::len($args)-1);
 }
-$sites[] = 'base';
-foreach ($sites as $site){
-    $path = "./sites/{$site}/controlers/{$c}.php";
-    if (file_exists($path)){
-        require_once($path);
-        $c = new $c();
-        break;
-    }
+$args = explode('/', $args);
+if (0 < count($args)){
+    $c = array_shift($args);
 }
-
-hdd($_SERVER['HTTP_ACCEPT_LANGUAGE']);
-
-hdd($c);
+$c = ControlerFactory($c);
+if (!is_a($c, 'Ctr_Base', false)){
+    array_unshift($args, (is_string($c) ? $c : get_class($c)) );
+    $c = ControlerFactory('Base');
+}
+hd($c);
+echo("<br/>\n");
+hdd($args);
 
 ?>
