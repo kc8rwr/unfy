@@ -15,72 +15,72 @@ require_once('classes/controler.php');
 
 //*********************** Controler Factory
 function ControlerFactory($controler){
-    $sites = array();
-    if (null != @Unfy::$site['name']){
-        $sites[] = Unfy::$site['name'];
-    }
-    $sites[] = 'base';
-    foreach ($sites as $site){
-        $path = UStr::toLower("./sites/{$site}/controlers/{$controler}.php");
-        if (file_exists($path)){
-            require_once($path);
-            $controler = new ('Ctr_'.$controler)();
-            break;
-        }
-    }
-    return $controler;
+	$sites = array();
+	if (null != @Unfy::$site['name']){
+		$sites[] = Unfy::$site['name'];
+	}
+	$sites[] = 'base';
+	foreach ($sites as $site){
+		$path = UStr::toLower("./sites/{$site}/controlers/{$controler}.php");
+		if (file_exists($path)){
+			require_once($path);
+			$controler = new ('Ctr_'.$controler)();
+			break;
+		}
+	}
+	return $controler;
 }
 
 //************************* Autoloader
 spl_autoload_register(function($classname){
-    $filename = UStr::toLower($classname);
-    $filename = UStr::replace('_', DIRECTORY_SEPARATOR, $filename);
+	$filename = UStr::toLower($classname);
+	$filename = UStr::replace('_', DIRECTORY_SEPARATOR, $filename);
     
-    $sites = array();
-    if (!empty(Unfy::$site)) $sites[] = Unfy::$site;
-    $sites[] = 'base';
+	$sites = array();
+	if (!empty(Unfy::$site)) $sites[] = Unfy::$site;
+	$sites[] = 'base';
     
-    $found = false;
+	$found = false;
     
-    foreach ($sites as $site){
-        $path = "sites/{$site}/models/{$filename}.php";
-        if (file_exists($path)){
-            $found = true;
-            require_once($path);
-        }
-    }
+	foreach ($sites as $site){
+		$path = "sites/{$site}/models/{$filename}.php";
+		if (file_exists($path)){
+			$found = true;
+			require_once($path);
+		}
+	}
 
-    if (!$found){
-        if (UStr::starts_with($classname, 'rows_', false)){
-            $code = "class {$classname} extends Rows {}";
-            eval($code);            
-        }
-        else if (UStr::starts_with($classname, 'row_', false)){
-            $code = "class {$classname} extends Row {}";
-            eval($code);            
-        }
-    }
+	if (!$found){
+		if (UStr::starts_with($classname, 'rows_', false)){
+			$code = "class {$classname} extends Rows {}";
+			eval($code);            
+		}
+		else if (UStr::starts_with($classname, 'row_', false)){
+			$code = "class {$classname} extends Row {}";
+			eval($code);            
+		}
+	}
 });
 
 //************************** Debugging
 $debugConfs = Config::getVal("debug");
 if (is_array($debugConfs)){
-    foreach ($debugConfs AS $key=> $value){
-        switch ($key)
-        {
-            case 'display_errors' :
-                ini_set('display_errors', 1 == $value ? '1' : '0');
-                break;
-            case 'display_startup_errors' :
-                ini_set('display_errors', 1 == $value ? '1' : '0');
-                break;
-            case 'error_reporting' :
-                if (is_int($value)){
-                    error_reporting($value);
-                }
-                break;
-        }
-    }
+	foreach ($debugConfs AS $key=> $value){
+		switch ($key)
+		{
+			case 'display_errors' :
+				ini_set('display_errors', 1 == $value ? '1' : '0');
+				break;
+			case 'display_startup_errors' :
+				ini_set('display_errors', 1 == $value ? '1' : '0');
+				break;
+			case 'error_reporting' :
+				if (is_int($value)){
+					error_reporting($value);
+				}
+				break;
+		}
+	}
 }
 
 Unfy::$site = @(new Rows_Site(array('domain'=>$_SERVER['SERVER_NAME'])))[0];
@@ -88,55 +88,55 @@ Unfy::$site = @(new Rows_Site(array('domain'=>$_SERVER['SERVER_NAME'])))[0];
 /*
 //************************* Exception Handler
 function exception_handler($_exception) {
-    $c = new ExceptionC($site, $config, $input, 'exception'.DS.'e'.$_exception->getCode(), $logins);
-    $m = 'E'.$_exception->getCode();
-    $c->$m($_exception->getMessage());
+$c = new ExceptionC($site, $config, $input, 'exception'.DS.'e'.$_exception->getCode(), $logins);
+$m = 'E'.$_exception->getCode();
+$c->$m($_exception->getMessage());
 		
-    if ($_SESSION['isMobile']) {
-        $viewPath = $site.DS.'views'.DS.'mobile'.DS.$c->view.'.php';
-        if (!file_exists($viewPath)) {
-            $viewPath = $site.DS.'views'.DS.$c->view.'.php';
-            if (!file_exists($viewPath)) {
-                $viewPath = 'base'.DS.'views'.DS.'mobile'.DS.$c->view.'.php';
-                if (!file_exists($viewPath)) {
-                    $viewPath = 'base'.DS.'views'.DS.$c->view.'.php';
-                    if (!file_exists($viewPath)) {
-                        $viewPath = $site.DS.'views'.DS.'mobile'.DS.'exceptions/unknown.php';
-                        if (!file_exists($viewPath)) {
-                            $viewPath = $site.DS.'views'.DS.'exceptions/unknown.php';
-                            if (!file_exists($viewPath)) {
-                                $viewPath = 'base'.DS.'views'.DS.'mobile'.DS.'exceptions/unknown.php';
-                                if (!file_exists($viewPath)) {
-                                    $viewPath = 'base'.DS.'views'.DS.'exceptions/unknown.php';
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        $viewPath = $site.DS.'views'.DS.$c->view.'.php';
-        if (!file_exists($viewPath)) {
-            $viewPath = 'base'.DS.'views'.DS.$c->view.'.php';
-            if (!file_exists($viewPath)) {
-                $viewPath = $site.DS.'views'.DS.'exceptions/unknown.php';
-                if (!file_exists($viewPath)) {
-                    $viewPath = 'base'.DS.'views'.DS.'exceptions/unknown.php';
-                }
-            }
-        }
-    }
-    if (!file_exists($viewPath)) {
-        die ('Exception Handler Cannot Find View');
-    }
+if ($_SESSION['isMobile']) {
+$viewPath = $site.DS.'views'.DS.'mobile'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = $site.DS.'views'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.'mobile'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = $site.DS.'views'.DS.'mobile'.DS.'exceptions/unknown.php';
+if (!file_exists($viewPath)) {
+$viewPath = $site.DS.'views'.DS.'exceptions/unknown.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.'mobile'.DS.'exceptions/unknown.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.'exceptions/unknown.php';
+}
+}
+}
+}
+}
+}
+}
+} else {
+$viewPath = $site.DS.'views'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.$c->view.'.php';
+if (!file_exists($viewPath)) {
+$viewPath = $site.DS.'views'.DS.'exceptions/unknown.php';
+if (!file_exists($viewPath)) {
+$viewPath = 'base'.DS.'views'.DS.'exceptions/unknown.php';
+}
+}
+}
+}
+if (!file_exists($viewPath)) {
+die ('Exception Handler Cannot Find View');
+}
 		
-    $template_path = $site.DS.'templates'.DS.$c->template;
-    if (!file_exists($template_path)) {
-        $template_path = 'base'.DS.'templates'.DS.$c->template;
-    }
+$template_path = $site.DS.'templates'.DS.$c->template;
+if (!file_exists($template_path)) {
+$template_path = 'base'.DS.'templates'.DS.$c->template;
+}
 
-    include $template_path;
+include $template_path;
 		
 }
 set_exception_handler('exception_handler');
@@ -149,21 +149,21 @@ $_SESSION['messages'] = Array();
 $c = 'Base';
 $args = $_SERVER['REQUEST_URI'];
 if (!UStr::starts_with($args, Config::getval('base_path'))){
-    throw new Exception_404();
+	throw new Exception_404();
 } else {
-    $args = UStr::substr($args, UStr::len(Config::getval('base_path')));
+	$args = UStr::substr($args, UStr::len(Config::getval('base_path')));
 }
 while (UStr::ends_with($args, '/')){
-    $args = UStr::substr($args, 0, UStr::len($args)-1);
+	$args = UStr::substr($args, 0, UStr::len($args)-1);
 }
 $args = explode('/', $args);
 if (0 < count($args)){
-    $c = array_shift($args);
+	$c = array_shift($args);
 }
 $c = ControlerFactory($c);
 if (!is_a($c, 'Ctr_Base', false)){
-    array_unshift($args, (is_string($c) ? $c : get_class($c)) );
-    $c = ControlerFactory('Base');
+	array_unshift($args, (is_string($c) ? $c : get_class($c)) );
+	$c = ControlerFactory('Base');
 }
 hd($c);
 echo("<br/>\n");

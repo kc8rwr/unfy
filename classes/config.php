@@ -2,58 +2,58 @@
 
 class Config
 {
-    private static $ini_contents = null;
+	private static $ini_contents = null;
     
-    private static function init(){
-        if (null == static::$ini_contents){
+	private static function init(){
+		if (null == static::$ini_contents){
 
-            $ini_file = 'unfy.ini';
-            $template_ini_file = 'unfy.ini.template';
+			$ini_file = 'unfy.ini';
+			$template_ini_file = 'unfy.ini.template';
 
-            //ensure the config file template exists
-            if (!file_exists($template_ini_file)){
-                file_put_contents($template_ini_file, '');
-            }
-            //ensure the config file exists
-            if (!file_exists($ini_file)){
-                copy($template_ini_file, $ini_file);
-            }
-            $ini_contents = parse_ini_file($ini_file, true);
+			//ensure the config file template exists
+			if (!file_exists($template_ini_file)){
+				file_put_contents($template_ini_file, '');
+			}
+			//ensure the config file exists
+			if (!file_exists($ini_file)){
+				copy($template_ini_file, $ini_file);
+			}
+			$ini_contents = parse_ini_file($ini_file, true);
 
-            //normalize base path
-            $ini_contents['base_path'] = empty($ini_contents['base_path']) ? '' : $ini_contents['base_path'];
-            $ini_contents['base_path'] = trim($ini_contents['base_path']);
-            $ini_contents['base_path'] = rtrim($ini_contents['base_path'], DIRECTORY_SEPARATOR);
-            $ini_contents['base_path'] .= DIRECTORY_SEPARATOR;
+			//normalize base path
+			$ini_contents['base_path'] = empty($ini_contents['base_path']) ? '' : $ini_contents['base_path'];
+			$ini_contents['base_path'] = trim($ini_contents['base_path']);
+			$ini_contents['base_path'] = rtrim($ini_contents['base_path'], DIRECTORY_SEPARATOR);
+			$ini_contents['base_path'] .= DIRECTORY_SEPARATOR;
 
-            //normalize db path
-            if (!(array_key_exists('database', $ini_contents) && is_array($ini_contents['database']))){
-                $ini_contents['database'] = Array();
-            }
-            if (!(array_key_exists('path', $ini_contents['database']) && is_string($ini_contents['database']['path']))){
-                $ini_contents['database']['path'] = '';
-            }
-            $ini_contents['database']['path'] = trim($ini_contents['database']['path']);
-            if (uSTr::starts_with('.'.DIRECTORY_SEPARATOR, $ini_contents['database']['path'])){
-                $ini_contents['database']['path'] = uSTr::substr($ini_contents['database']['path'], 2);
-            }
-            static::$ini_contents = $ini_contents;
+			//normalize db path
+			if (!(array_key_exists('database', $ini_contents) && is_array($ini_contents['database']))){
+				$ini_contents['database'] = Array();
+			}
+			if (!(array_key_exists('path', $ini_contents['database']) && is_string($ini_contents['database']['path']))){
+				$ini_contents['database']['path'] = '';
+			}
+			$ini_contents['database']['path'] = trim($ini_contents['database']['path']);
+			if (uSTr::starts_with('.'.DIRECTORY_SEPARATOR, $ini_contents['database']['path'])){
+				$ini_contents['database']['path'] = uSTr::substr($ini_contents['database']['path'], 2);
+			}
+			static::$ini_contents = $ini_contents;
 
-        }
-    }
+		}
+	}
 
-    public static function getVal(){
-        static::init();
-        $bucket = static::$ini_contents;
-        foreach (func_get_args() AS $arg){
-            if (array_key_exists($arg, $bucket)){
-                $bucket = $bucket[$arg];
-            } else {
-                return null;
-            }
-        }
-        return $bucket;
-    }
+	public static function getVal(){
+		static::init();
+		$bucket = static::$ini_contents;
+		foreach (func_get_args() AS $arg){
+			if (array_key_exists($arg, $bucket)){
+				$bucket = $bucket[$arg];
+			} else {
+				return null;
+			}
+		}
+		return $bucket;
+	}
 }
 
 ?>
