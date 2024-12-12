@@ -13,20 +13,45 @@ require_once('classes/rows.php');
 require_once('classes/row.php');
 require_once('classes/controler.php');
 
+//*********************** Require Site Overrideable Files
+function UnfyRequire($name, $type){
+	$success = true;
+	$name = UStr::toLower($name);
+	$type = UStr::toLower($type);
+	switch ($type){
+		case 'controler':
+		case 'model':
+		case 'view':
+			$type .= 's';
+			break;
+		default:
+			$success = false;
+			break;
+	}
+	if ($success){
+		$success = false;
+		$sites = array();
+		if (null != @Unfy::$site['name']){
+			$sites[] = Unfy::$site['name'];
+		}
+		$sites[] = 'base';
+		foreach ($sites as $site){
+			$path = UStr::toLower("./sites/{$site}/{$type}/{$name}.php");
+			if (file_exists($path)){
+				require_once($path);
+				$success = true;
+				break;
+			}
+		}
+	}
+	return $success;
+}
+
+
 //*********************** Controler Factory
 function ControlerFactory($controler){
-	$sites = array();
-	if (null != @Unfy::$site['name']){
-		$sites[] = Unfy::$site['name'];
-	}
-	$sites[] = 'base';
-	foreach ($sites as $site){
-		$path = UStr::toLower("./sites/{$site}/controlers/{$controler}.php");
-		if (file_exists($path)){
-			require_once($path);
-			$controler = new ('Ctr_'.$controler)();
-			break;
-		}
+	if (UnfyRequire($controler, 'controler')){
+		$controler = new ('Ctr_'.$controler)();
 	}
 	return $controler;
 }
@@ -35,21 +60,9 @@ function ControlerFactory($controler){
 spl_autoload_register(function($classname){
 	$filename = UStr::toLower($classname);
 	$filename = UStr::replace('_', DIRECTORY_SEPARATOR, $filename);
-    
-	$sites = array();
-	if (!empty(Unfy::$site)) $sites[] = Unfy::$site;
-	$sites[] = 'base';
-    
-	$found = false;
-    
-	foreach ($sites as $site){
-		$path = "sites/{$site}/models/{$filename}.php";
-		if (file_exists($path)){
-			$found = true;
-			require_once($path);
-		}
-	}
 
+	$found = UnfyRequire($filename, 'model');
+	
 	if (!$found){
 		if (UStr::starts_with($classname, 'rows_', false)){
 			$code = "class {$classname} extends Rows {}";
@@ -160,13 +173,18 @@ $args = explode('/', $args);
 if (0 < count($args)){
 	$c = array_shift($args);
 }
-$c = ControlerFactory($c);
-if (!is_a($c, 'Ctr_Base', false)){
+
+if (UnfyRequire($c, 'controler')){
+	$c = new ('Ctr_'.$c);
+} else {
 	array_unshift($args, (is_string($c) ? $c : get_class($c)) );
-	$c = ControlerFactory('Base');
+	if (UnfyRequire('Base', 'controler')){
+		$c = new Ctr_Base();
+	}
 }
-hd($c);
-echo("<br/>\n");
-hdd($args);
+
+if (!UnfyRequire($c->view, 'view')){
+	throw new Exception_404();
+}
 
 ?>
