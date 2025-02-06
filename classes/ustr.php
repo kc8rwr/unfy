@@ -117,7 +117,34 @@ class UStr{
 		}
 		return $output;
 	}
-    
+
+	public static function strpos($haystack, $needle, $offet, $encoding = null){
+		$output = null;
+		if (static::has_mb()){
+			$output =  mb_strpos($haystack, $needle, $offset, $encoding);
+		} else {
+			$output = strpos($haystack, $needle, $offset, $encoding);
+		}
+		return $output;
+	}
+
+	public static function strrpos($haystack, $needle, $offset = 0, $encoding = null){
+		$output = null;
+		if (static::has_mb()){
+			$output =  mb_strrpos($haystack, $needle, $offset, $encoding);
+		} else {
+			$output = strrpos($haystack, $needle, $offset);
+		}
+		return $output;
+	}
+
+	public static function contains($haystack, $needle){
+		if (function_exists('str_contains')){
+			return str_contains($haystack, $needle);
+		} else {
+			return false !== UStr::strpos($haystack, $needle);
+		}
+	}
 }
 
 ?>

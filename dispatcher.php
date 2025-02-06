@@ -6,7 +6,6 @@ error_reporting(E_ALL | E_STRICT);
 //used by autoloader method so must manually load here
 require_once('classes/functions.php');
 require_once('classes/unfy.php');
-require_once('classes/config.php');
 require_once('classes/database.php');
 require_once('classes/ustr.php');
 require_once('classes/rows.php');
@@ -76,7 +75,7 @@ spl_autoload_register(function($classname){
 });
 
 //************************** Debugging
-$debugConfs = Config::getVal("debug");
+$debugConfs = Unfy::getFig("debug");
 if (is_array($debugConfs)){
 	foreach ($debugConfs AS $key=> $value){
 		switch ($key)
@@ -159,12 +158,24 @@ session_start();
 $input = array_merge( (is_array(@$_SESSION['messages'])?$_SESSION['messages']:array()), $_POST, $_GET);
 $_SESSION['messages'] = Array();
 
+$bob = Unfy::getCache('bob');
+if (null === $bob || !is_numeric($bob)) {
+	$bob = 0;
+}
+echo ('Bob: ');
+var_dump($bob);
+$bob++;
+Unfy::setCache('bob', $bob);
+die();
+	
+	
+
 $c = 'Base';
 $args = $_SERVER['REQUEST_URI'];
-if (!UStr::starts_with($args, Config::getval('base_path'))){
+if (!UStr::starts_with($args, Unfy::getFig('base_path'))){
 	throw new Exception_404();
 } else {
-	$args = UStr::substr($args, UStr::len(Config::getval('base_path')));
+	$args = UStr::substr($args, UStr::len(Unfy::getFig('base_path')));
 }
 while (UStr::ends_with($args, '/')){
 	$args = UStr::substr($args, 0, UStr::len($args)-1);

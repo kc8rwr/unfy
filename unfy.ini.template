@@ -17,3 +17,11 @@ path = unfy.db
 ;host = localhost
 ;port = 3306
 ;socket = /var/run/mysqld/mysqld.sock
+
+; Only used if APCu is not present
+; Defaults to TCP 127.0.0.1:11211
+;[cache]
+;prefix=unfy
+;host=127.0.0.1
+;port=11211
+;use_udp = false

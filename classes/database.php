@@ -8,7 +8,7 @@ class Database{
 	public static function init(){
 		$output = array('success'=> false, 'message'=>'');
         
-		$params = Config::getVal('database');
+		$params = Unfy::getFig('database');
 		switch(@$params['type']){
 			case 'mysql':
 				if (empty($params['host'])
@@ -32,7 +32,7 @@ class Database{
 				}
 				break;
 			case 'sqlite':
-				$base_path = Config::getVal('base_path');
+				$base_path = Unfy::getFig('base_path');
 				try{
 					static::$dbconn_r = new PDO("sqlite:{$base_path}{$params['path']}");
 				}
