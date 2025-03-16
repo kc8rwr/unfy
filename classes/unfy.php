@@ -25,7 +25,7 @@ class Unfy{
 			if (!file_exists($ini_file)){
 				copy($template_ini_file, $ini_file);
 			}
-			$ini_contents = parse_ini_file($ini_file, true);
+			$ini_contents = parse_ini_file($ini_file, true, INI_SCANNER_TYPED);
 
 			//normalize base path
 			$ini_contents['base_path'] = empty($ini_contents['base_path']) ? '' : $ini_contents['base_path'];
@@ -68,6 +68,7 @@ class Unfy{
 	  Cache
 	****************************************/
 
+	private static $cacheEnabled = null;
 	private static $cachePrefix = 'unfy_';
 	private static $cache = array();
 	private static $hasAPCu = null;
@@ -80,15 +81,17 @@ class Unfy{
 		$output = null;
 		if (!array_key_exists($key, static::$cache)){
 			static::initializeCache();
-			$cache_key = static::$cachePrefix.$key;
-			if (static::$hasAPCu){
-				if (apcu_exists($cache_key)){
-					static::$cache[$key] = apcu_fetch($cache_key);
-				}
-			} else if (null != static::$memcached) {
-				$mcResponse = static::$memcached->get($cache_key);
-				if (false !== $mcResponse){
-					static::$cache[$key] = $mcResponse;
+			if (static::$cacheEnabled){
+				$cache_key = static::$cachePrefix.$key;
+				if (static::$hasAPCu){
+					if (apcu_exists($cache_key)){
+						static::$cache[$key] = apcu_fetch($cache_key);
+					}
+				} else if (null != static::$memcached) {
+					$mcResponse = static::$memcached->get($cache_key);
+					if (false !== $mcResponse){
+						static::$cache[$key] = $mcResponse;
+					}
 				}
 			}
 		}
@@ -101,46 +104,58 @@ class Unfy{
 	public static function setCache($key, $value){
 		static::$cache[$key] = $value;
 		static::initializeCache();
-		$cache_key = static::$cachePrefix.$key;
-		if (static::$hasAPCu){
-			apcu_store($cache_key, $value, rand(static::MIN_CACHE_TTL_MIN, static::MAX_CACHE_TTL_MIN)*60);
-		} else if (null !== static::$memcached){
-			static::$memcached->set($cache_key, $value, rand(static::MIN_CACHE_TTL_MIN, static::MAX_CACHE_TTL_MIN)*60);
+		if (static::$cacheEnabled){
+			$cache_key = static::$cachePrefix.$key;
+			if (static::$hasAPCu){
+				apcu_store($cache_key, $value, rand(static::MIN_CACHE_TTL_MIN, static::MAX_CACHE_TTL_MIN)*60);
+			} else if (null !== static::$memcached){
+				static::$memcached->set($cache_key, $value, rand(static::MIN_CACHE_TTL_MIN, static::MAX_CACHE_TTL_MIN)*60);
+			}
 		}
 	}
-
+	
 	private static function initializeCache(){
-		//get prefix
-		$cacheConfig = Unfy::getFig("cache");
-		if (null != $cacheConfig && is_array($cacheConfig)){
-			if (array_key_exists('prefix', $cacheConfig) && !empty($cacheConfig['prefix'])){
-				static::$cachePrefix = $cacheConfig['prefix'];
-			}
-		}
-		//check for APCu
-		if (null === static::$hasAPCu){
-			static::$hasAPCu = function_exists('apcu_enabled') && apcu_enabled();
-		}
-		//prepare memcached
-		if ((!static::$hasAPCu) && null === static::$memcached){
-			$host = "127.0.0.1";
-			$port = 11211;
-			$use_UDP = false;
+		if (null == static::$cacheEnabled){
+			//get prefix
+			$cacheConfig = Unfy::getFig("cache");
 			if (null != $cacheConfig && is_array($cacheConfig)){
-				if (array_key_exists('host', $cacheConfig) && !empty($cacheConfig['host'])){
-					$host = $cacheConfig['host'];
+				static::$cacheEnabled = false;
+				if (array_key_exists('enabled', $cacheConfig)){
+					static::$cacheEnabled = $cacheConfig['enabled'];
 				}
-				if (array_key_exists('port', $cacheConfig) && !empty($cachsConfig['port'])){
-					$port = $cachConfig['port'];
-				}
-				if (array_key_exists('use_udp', $cacheConfig) && !empty($cacheConfig['use_udp'])){
-					$use_UDP = $memcachedConfig['use_udp'] ? true : false;
+				if (static::$cacheEnabled && array_key_exists('prefix', $cacheConfig) && !empty($cacheConfig['prefix'])){
+					static::$cachePrefix = $cacheConfig['prefix'];
 				}
 			}
-			$mc = new Memcached();
-			$mc->setOption(Memcached::OPT_USE_UDP, $use_UDP);
-			$mc->addServer($host, $port);
-			static::$memcached = $mc;
+			if (static::$cacheEnabled){
+				//check for APCu
+				if (null === static::$hasAPCu){
+					static::$hasAPCu = function_exists('apcu_enabled') && apcu_enabled();
+				}
+				//prepare memcached
+				if ((!static::$hasAPCu) && null === static::$memcached){
+					$host = "127.0.0.1";
+					$port = 11211;
+					$use_UDP = false;
+					if (null != $cacheConfig && is_array($cacheConfig)){
+						if (array_key_exists('host', $cacheConfig) && !empty($cacheConfig['host'])){
+							$host = $cacheConfig['host'];
+						}
+						if (array_key_exists('port', $cacheConfig) && !empty($cachsConfig['port'])){
+							$port = $cachConfig['port'];
+						}
+						if (array_key_exists('use_udp', $cacheConfig) && !empty($cacheConfig['use_udp'])){
+							$use_UDP = $memcachedConfig['use_udp'] ? true : false;
+						}
+					}
+					if (class_exists("Memcached")){
+						$mc = new Memcached();
+						$mc->setOption(Memcached::OPT_USE_UDP, $use_UDP);
+						$mc->addServer($host, $port);
+						static::$memcached = $mc;
+					}
+				}
+			}
 		}
 	}
 }

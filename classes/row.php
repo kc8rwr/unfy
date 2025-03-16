@@ -1,6 +1,6 @@
 <?php
 
-class Row implements ArrayAccess, Iterator, Countable, Stringable{
+abstract class Row implements ArrayAccess, Iterator, Countable, Stringable{
 
 	protected $table = 'row';
 	private $dbValues = null;

@@ -4,12 +4,17 @@ class Database{
 
 	private static $dbconn_w = null;
 	private static $dbconn_r = null;
-
+	private static $type = null;
+	
 	public static function init(){
 		$output = array('success'=> false, 'message'=>'');
         
 		$params = Unfy::getFig('database');
-		switch(@$params['type']){
+		if (!empty(@$params['type'])){
+			static::$type = UStr::toLower($params['type']);
+		}
+		
+		switch(static::$type){
 			case 'mysql':
 				if (empty($params['host'])
 					 || empty($params['name'])
@@ -34,7 +39,7 @@ class Database{
 			case 'sqlite':
 				$base_path = Unfy::getFig('base_path');
 				try{
-					static::$dbconn_r = new PDO("sqlite:{$base_path}{$params['path']}");
+					static::$dbconn_r = new PDO("sqlite:{$params['path']}");
 				}
 				catch (PDOException $e){
 					hdd($e);
@@ -52,6 +57,13 @@ class Database{
 		return $output;
 	}
 
+	public static function getType(){
+		if (is_null(static::$type)){
+			static::init();
+		}
+		return static::$type;
+	}
+	
 	public static function escape($in){
 		$escaped = self::dbr()->quote($in);
 		return ustr::substr($escaped, 1, ustr::len($escaped)-2);
@@ -70,6 +82,29 @@ class Database{
 		}
 		return static::$dbconn_w;
 	}
-    
+
+	//Schema check
+
+	public static function tableExists($table){
+		$table = UStr::toLower($table);
+		if (true || null == Unfy::getCache('base_rows_tables')){
+			$query = null;
+			if ('mysql' == static::getType()){
+				$query = 'SHOW TABLES;';
+			}
+			else if ('sqlite' == static::getType()){
+				$query = "SELECT `name` FROM `sqlite_schema` WHERE `type` ='table' AND `name` NOT LIKE 'sqlite_%';";
+			}
+			if (null != $query){
+				$query = static::dbr()->query($query, PDO::FETCH_COLUMN, 0)->fetchAll();
+				if(is_array($query)){
+					Unfy::setCache('base_rows_tables', $query);
+				}
+			}
+		}
+		$tables = Unfy::getCache('base_rows_tables');
+		return (is_array($tables) && in_array($table, $tables));
+	}
+	
 }
 ?>

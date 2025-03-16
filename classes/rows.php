@@ -1,6 +1,6 @@
 <?php
 
-class Rows implements ArrayAccess, Countable, Stringable, Iterator{
+abstract class Rows implements ArrayAccess, Countable, Stringable, Iterator{
 
 	protected $pageSize = 100;
 
@@ -280,6 +280,6 @@ class Rows implements ArrayAccess, Countable, Stringable, Iterator{
 		$output .= "{$indent}}\n";
 		return $output;
 	}
-        
+
 }
 ?>

@@ -7,6 +7,10 @@ display_errors = 1
 display_startup_errors = 1
 error_reporting = E_ALL
 
+[ini_set]
+; if you want to turn on jit for the pcre library then you need to allow php to allocate executable memory
+pcre.jit 0
+
 [database]
 ; sqlite
 type = sqlite
