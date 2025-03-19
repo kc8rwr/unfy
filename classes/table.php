@@ -93,7 +93,7 @@ abstract class Table{
 								$max = null;
 
 								if (UStr::ends_with($arType[0], ')')){
-									$begI = uStr::strpos($arType[0], '(');
+									$begI = uStr::pos($arType[0], '(');
 									if (false !== $begI && uStr::len($arType[0])-1 > $begI){
 										$length = uStr::substr($arType[0], $begI+1, uStr::len($arType[0])-2-$begI);
 										$arType[0] = uStr::substr($arType[0], 0, $begI);

@@ -70,7 +70,7 @@ abstract class Rows implements ArrayAccess, Countable, Stringable, Iterator{
 						$comp = '!=';
 						break;
 				}
-				$lastDot = UStr::strrpos($col, '.');
+				$lastDot = UStr::rpos($col, '.');
 				if (false === $lastDot){
 					$col = "`{$this->table}`.`{$col}`";
 				} else {
@@ -103,7 +103,7 @@ abstract class Rows implements ArrayAccess, Countable, Stringable, Iterator{
 		if (!is_null($this->sorts)){
 			foreach ($this->sorts as $col){
 				$col = Database::escape($col);
-				$lastDot = UStr::strrpos($col, '.');
+				$lastDot = UStr::rpos($col, '.');
 				if (false === $lastDot){
 					$col = "`{$this->table}`.`{$col}`";
 				} else {
