@@ -1,5 +1,7 @@
 <?php
 
+UStr::$has_mb = extension_loaded('mbstring');
+
 /** 
  * @brief Unfy String class.
  * 
@@ -21,6 +23,8 @@
  */
 class UStr{
 
+	public static $has_mb = null;
+	
 	/// A string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
 	const SPACE_NEEDLE = " \n\r\t\v\f\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}";
 	const CASE_LOWER = MB_CASE_LOWER;
@@ -44,7 +48,7 @@ class UStr{
 	 * @return Returns the escaped string.
 	 */
 	public static function addcslashes(string $string, string $characters, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$characters = static::toCharList($characters, $encoding);
 			$output = $string;
 			if (in_array('\\', $characters)){ //escape backslashes first if that is in the list so that added backslashes do not get escaped
@@ -71,7 +75,7 @@ class UStr{
 	 * @return Returns a value less than 0 if string1 is less than string2; a value greater than 0 if string1 is greater than string2, and 0 if they are equal. No particular meaning can be reliably inferred from the value aside from its sign.
 	 */
 	public static function casecmp(string $string1, string $string2, ?string $encoding=null):int {
-		if (has_mb()){ 
+		if (static::$has_mb){ 
 			//from https://www.php.net/manual/en/function.strcasecmp.php comment by chris at cmbuckley dot co dot uk
 			$encoding = null == $encoding ? mb_internal_encoding() : $encoding;
 			return strcmp(mb_strtoupper($str1, $encoding), mb_strtoupper($str2, $encoding));
@@ -89,7 +93,7 @@ class UStr{
 	 * @return - string The character.
 	 */
 	public static function chr(int $in, ?string $encoding=null): string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_chr($in, $encoding);
 		} else {
 			return chr($in);
@@ -135,7 +139,7 @@ class UStr{
 	 * @return string - The chunked output string.
 	 */
 	public static function chunk_split(string $string, int $length=76, string $separator="\r\n", ?string $encoding=null): string {
-		if (string::has_mb()){
+		if (static::$has_mb){
 			return static::implode($separator, static::split($string, $length, $encoding));
 		} else {
 			return chunk_split($string, $length, $separator);
@@ -184,7 +188,7 @@ class UStr{
 	 * @return 
 	 */
 	public static function convert_case(string $string, int $mode, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_convert_case($string, $mode, $encoding);
 		} else {
 			switch ($mode){
@@ -225,7 +229,7 @@ class UStr{
 	 * @return Returns the length of the initial segment of string which consists entirely of characters not in characters. 
 	 */
 	public static function cspn(string $string, string $characters, int $offset=0, ?int $length=null, ?string $encoding=null): int {
-		if (has_mb()){
+		if (static::$has_mb){
 			if (0 < $offset || null != $length){
 				return static::cspn(static::substr($string, $offset, $length), $characters, 0, null, $encoding);
 			}
@@ -291,15 +295,6 @@ class UStr{
 	 */
 	public static function explode(string $separator, string $string, int $limit=PHP_INT_MAX, ?string $encoding=null):array {
 		return explode($separator, $string, $limit);
-	}
-	
-	/** 
-	 * Does this PHP install include the mbstring module?
-	 * 
-	 * @return bool
-	 */
-	public static function has_mb():bool {
-		return extension_loaded('mbstring');
 	}
 
 	/** 
@@ -399,7 +394,7 @@ class UStr{
 	 */
 	public static function ipos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = false;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output =  mb_stripos($haystack, $needle, $offset, $encoding);
 		} else {
 			$output = stripos($haystack, $needle, $offset);
@@ -419,7 +414,7 @@ class UStr{
 	 * @return - string
 	 */
 	public static function ireplace(array|string $search, array|string $replace, string|array $subject, int &$count=null, ?string $encoding=null){
-		if (false && has_mb()){
+		if (false && static::$has_mb){
 			$count = 0;
 			$search = is_array($search) ? $search : array($search);
 			$replace = is_array($replace) ? $replace : array_fill(0, count($search), $replace);
@@ -503,7 +498,7 @@ class UStr{
 	 * @return The uppercased string.
 	 */
 	public static function lcfirst(string $string, ?string $encoding=null): string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_lcfirst($string, $encoding);
 		} else {
 			return lcfirst($string);
@@ -519,7 +514,7 @@ class UStr{
 	 * @return integer
 	 */
 	public static function len(string $in, ?string $encoding=null):int {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_strlen($in, $encoding);
 		} else {
 			return strlen($in);
@@ -571,7 +566,7 @@ class UStr{
 			$needles = SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			if (function_exists('mb_ltrim')){ //new as of php 8.4
 				return mb_ltrim($haystack, $needles, $encoding);
 			} else {
@@ -592,7 +587,7 @@ class UStr{
 	 * @return 
 	 */
 	public static function ord(string $string, ?string $encoding=null):int|false {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_ord($string, $encoding);
 		} else {
 			return ord($string);
@@ -612,7 +607,7 @@ class UStr{
 	 * @return The padded string. 
 	 */
 	public static function pad(string $string, int $length, string $pad_string=' ', int $pad_type=STR_PAD_RIGHT, ?string $encoding=null):string {
-		if (has_mb()){
+		if (static::$has_mb){
 			return mb_str_pad($string, $length, $pad_string, $pad_type, $encoding);
 		} else {
 			return str_pad($string, $length, $pad_string, $pad_type);
@@ -629,7 +624,7 @@ class UStr{
 	 * @return With multibyte - true/false success/failure or without multibyte always true.
 	 */
 	public static function parse(string $string, array &$result, ?string $encoding=null):bool {
-		 if (has_mb()){
+		if (static::$has_mb){
 			 return mb_parse_str($string, $array);
 		 } else {
 			 parse_str($string, $array);
@@ -649,7 +644,7 @@ class UStr{
 	 */
 	public static function pos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = false;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output =  mb_strpos($haystack, $needle, $offset, $encoding);
 		} else {
 			$output = strpos($haystack, $needle, $offset);
@@ -697,7 +692,7 @@ class UStr{
 	 */
 	public static function ripos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = null;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output =  mb_strripos($haystack, $needle, $offset, $encoding);
 		} else {
 			$output = strripos($haystack, $needle, $offset);
@@ -719,7 +714,7 @@ class UStr{
 	 */
 	public static function rpos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = null;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output =  mb_strrpos($haystack, $needle, $offset, $encoding);
 		} else {
 			$output = strrpos($haystack, $needle, $offset);
@@ -769,7 +764,7 @@ class UStr{
 			$needles = SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			if (function_exists('mb_trim')){ //new as of php 8.4
 				return mb_trim($haystack, $needles);
 			} else {
@@ -790,7 +785,7 @@ class UStr{
 	 * @return A new string made up of the input string's characters shuffled into a random order.
 	 */
 	public function shuffle(string $string, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output = '';
 			$arString = static::split($string, 1, $encoding);
 			while (0 < $chars = len($arString)){
@@ -814,7 +809,7 @@ class UStr{
 	 * @return - array of strings
 	 */
 	public static function split(string $string, int $length=1, ?string $encoding=null): array {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_str_spit($string, $length, $encoding);
 		} else {
 			return str_split($string, $length);
@@ -874,7 +869,7 @@ class UStr{
 	 */
 	public static function stripcslashes(string $string, ?string $encoding = null){
 		$output = $string;
-		if (static::has_mb())
+		if (static::$has_mb)
 		{
 			while(mb_ereg("\\\U[0-9a-fA-F]{8}|\\\u[0-9a-fA-F]{4}", $output, $match)){
 				$replacement = static::chr(hexdec(substr($match[0], 2)));
@@ -903,7 +898,7 @@ class UStr{
 	 * @return - string
 	 */
 	public static function substr(string $in, int $offset, ?int $length=null, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_substr($in, $offset, $length, $encoding);
 		} else {
 			return substr($in, $offset, $length);
@@ -955,7 +950,7 @@ class UStr{
 	 * @return Lowercased output string.
 	 */
 	public static function toLower(string $in, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_strToLower($in, $encoding);
 		} else {
 			return strToLower($in);
@@ -971,7 +966,7 @@ class UStr{
 	 * @return - Uppercased output string.
 	 */
 	public static function toUpper(string $in, ?string $encoding=null):string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_strToUpper($in, $encoding);
 		} else {
 			return strTUpper($in);
@@ -1023,7 +1018,7 @@ class UStr{
 			$needles = SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
-		if (static::has_mb()){
+		if (static::$has_mb){
 			if (function_exists('mb_trim')){ //new as of php 8.4
 				return mb_trim($haystack, $needles);
 			} else {
@@ -1044,7 +1039,7 @@ class UStr{
 	 * @return The uppercased string.
 	 */
 	public static function ucfirst(string $string, ?string $encoding=null): string {
-		if (static::has_mb()){
+		if (static::$has_mb){
 			return mb_ucfirst($string, $encoding);
 		} else {
 			return ucfirst($string);
@@ -1092,7 +1087,7 @@ class UStr{
 		if (null == $separators) {
 			$separators = SPACE_NEEDLE;
 		}
-		if (static::has_mb()){
+		if (static::$has_mb){
 			$output = '';
 			for ($i = 0; $i < mb_strlen($string); $i++){
 				$prev = 0 == $i ? ' ' : mb_substr($string, $i-1, 1, $encoding);
