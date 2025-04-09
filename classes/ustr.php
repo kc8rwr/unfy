@@ -66,6 +66,24 @@ class UStr{
 	}
 
 	/** 
+	 * @brief Quote string with slashes.
+	 * Returns a string with backslashes added before characters that need to be escaped. These characters are:
+	 * - single quote (')
+	 * - double quote (")
+	 * - backslash (\)
+	 * - NULL (the NULL byte)
+	 *
+	 * @warning Not secure for escaping sql strings. Use the correct PDO escape function for your database type, mysql_real_escape_string or other apropriate method for your database type.
+	 * @param string The input string.
+	 * @param $encoding Not used for this method, only there for consistency.
+	 * 
+	 * @return The escaped string.
+	 */
+	public static function addslashes(string $string, ?string $encoding=null):string {
+		return addslashes($string);
+	}
+	
+	/** 
 	 * Binary safe case-insensitive string comparison.
 	 * 
 	 * @param $string1 The first string.
@@ -84,6 +102,22 @@ class UStr{
 		}
 	}
 
+	/** 
+	 *  Check if strings are valid for the specified encoding.
+	 * 
+	 * @param value The byte stream or array to check.
+	 * @param encoding The expected encoding.
+	 * 
+	 * @return Returns true on success or false on failure.
+	 */
+	public static function check_encoding(array|string|null $value = null, ?string $encoding = null): bool {
+		if (static::$has_mb){
+			return mb_check_encoding($value, $encoding);
+		} else {
+			return true;
+		}
+	}
+	
 	/** 
 	 * Return character by Unicode code point value.
 	 * 
@@ -321,14 +355,13 @@ class UStr{
 	 * into these entities. The get_html_translation_table() function can be used to return the translation table used dependent upon the provided flags constants.
 	 * @note If you want to decode instead (the reverse) you can use Ustr::html_entity_decode().
 	 * @param $string The input string.
-	 * @param $flags A bitmask of one or more of the following flags, which specify how to handle quotes, invalid code unit sequences and the used document type.
-	 * The default is ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401. 
-	 * @param $double_encode When double_encode is turned off PHP will not encode existing html entities. The default is to convert everything.
+	 * @param $flags A bitmask of one or more of the following flags, which specify how to handle quotes, invalid code unit sequences and the used document type.  The default is ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401. 
 	 * @param $encoding An optional argument defining the encoding used when converting characters.
+	 * @param $double_encode When double_encode is turned off PHP will not encode existing html entities. The default is to convert everything.
 	 *
 	 * @return 
 	 */
-	public static function htmlentities(string $string, int $flags=ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, bool $double_encode=true, ?string $encoding=null):string {
+	public static function htmlentities(string $string, int $flags=ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, ?string $encoding=null, bool $double_encode=true):string {
 		 return htmlentities($string, $flags, $encoding, $double_encode);
 	 }
 
@@ -363,6 +396,50 @@ class UStr{
 	public static function htmlspecialchars_decode(string $string, int $flags=ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, ?string $encoding=null):string {
 		return htmlspecialchars_decode($string, $flags);
 	}
+
+	/** 
+	 * Detect HTTP input character encoding
+	 * 
+	 * @param type Input string specifies the input type. "G" for GET, "P" for POST, "C" for COOKIE, "S" for string, "L" for list, and "I" for the whole list (will return array). If type is omitted, it returns the last input type processed.
+	 * 
+	 * @return The character encoding name, as per the type, or an array of character encoding names, if type is "I". If mb_http_input() does not process specified HTTP input, it returns false.
+	 */
+	public static function http_input(?string $type=null):array|string|false {
+		if (static::$has_mb){
+			return mb_http_input($type);
+		} else {
+			$type = null == $type ? static::$http_input_last_type : $type;
+			static::$http_input_last_type = $type;
+			switch ($type){
+				case 'I':
+				case 'i':
+					return array('ISO-8859-1');
+					break;
+				case 'L':
+				case 'l':
+					return 'ISO-885901';
+					break;
+				case 'C':
+				case 'c':
+				case 'G':
+				case 'g':
+				case 'P':
+				case 'p':
+				case 'S':
+				case 's':
+					return false;
+					break;
+				default:
+					throw new ValueError('Uncaught ValueError: UStr::http_input(): Argument #1 ($type) must be one of "G", "P", "C", "S", "I"');
+					break;
+			}				
+		}
+	}
+
+	/** 
+	 * Stores the last type used by http_input.
+	 */
+	private static $http_input_last_type = "I";
 	
 	/** 
 	 * @brief Join array elements with a string.
@@ -379,7 +456,7 @@ class UStr{
 			$array = $separator;
 			$separator = ',';
 		}
-		return implode($string, $array);
+		return implode($separator, $array);
 	}
 
 	/** 
@@ -810,7 +887,7 @@ class UStr{
 	 */
 	public static function split(string $string, int $length=1, ?string $encoding=null): array {
 		if (static::$has_mb){
-			return mb_str_spit($string, $length, $encoding);
+			return mb_str_split($string, $length, $encoding);
 		} else {
 			return str_split($string, $length);
 		}
