@@ -39,9 +39,9 @@ class UStr{
 	/** 
 	 * Quote string with slashes in a C style.
 	 *
-	 * @param string The string to be escaped.
-	 * @param characters A list of characters to be escaped. Can include ranges using '..'.
-	 * @param encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $string The string to be escaped.
+	 * @param $characters A list of characters to be escaped. Can include ranges using '..'.
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
 	 * @warning Because multibyte characters in some character sets may contain the backslash byte addcslashes() is not a safe way to prevent sql injection. Use the correct method which is made for this purpose such as PDO::quote or mysqli::real_escape_string.
 	 *
@@ -74,7 +74,7 @@ class UStr{
 	 * - NULL (the NULL byte)
 	 *
 	 * @warning Not secure for escaping sql strings. Use the correct PDO escape function for your database type, mysql_real_escape_string or other apropriate method for your database type.
-	 * @param string The input string.
+	 * @param $string The input string.
 	 * @param $encoding Not used for this method, only there for consistency.
 	 * 
 	 * @return The escaped string.
@@ -105,8 +105,8 @@ class UStr{
 	/** 
 	 *  Check if strings are valid for the specified encoding.
 	 * 
-	 * @param value The byte stream or array to check.
-	 * @param encoding The expected encoding.
+	 * @param $value The byte stream or array to check.
+	 * @param $encoding The expected encoding.
 	 * 
 	 * @return Returns true on success or false on failure.
 	 */
@@ -400,7 +400,7 @@ class UStr{
 	/** 
 	 * Detect HTTP input character encoding
 	 * 
-	 * @param type Input string specifies the input type. "G" for GET, "P" for POST, "C" for COOKIE, "S" for string, "L" for list, and "I" for the whole list (will return array). If type is omitted, it returns the last input type processed.
+	 * @param $type Input string specifies the input type. "G" for GET, "P" for POST, "C" for COOKIE, "S" for string, "L" for list, and "I" for the whole list (will return array). If type is omitted, it returns the last input type processed.
 	 * 
 	 * @return The character encoding name, as per the type, or an array of character encoding names, if type is "I". If mb_http_input() does not process specified HTTP input, it returns false.
 	 */
@@ -440,6 +440,28 @@ class UStr{
 	 * Stores the last type used by http_input.
 	 */
 	private static $http_input_last_type = "I";
+
+	/** 
+	 * @brief Set/Get HTTP output character encoding.
+	 * Set/Get the HTTP output character encoding. Output after this function is called will be converted from the set internal encoding to encoding.
+	 *
+	 * @param $encoding 
+If encoding is set, mb_http_output() sets the HTTP output character encoding to encoding. If encoding is omitted, mb_http_output() returns the current HTTP output character encoding.
+	 * 
+	 * @return If encoding is omitted, mb_http_output() returns the current HTTP output character encoding. Otherwise, Returns true on success or false on failure.
+	 */
+	public static function http_output(?string $encoding = null):string|bool {
+		if (static::$has_mb){
+			return mb_http_output($encoding);
+		} else {
+			if (null == $encoding){
+				return 'ISO-8859-1';
+			} else if ('ISO-8859-1' == static::toUpper($encoding)) {
+				return true;
+			}
+			return false;
+		}
+	}
 	
 	/** 
 	 * @brief Join array elements with a string.
@@ -459,6 +481,28 @@ class UStr{
 		return implode($separator, $array);
 	}
 
+	/** 
+	 * Set/Get internal character encoding.
+	 * 
+	 * @param $internal_encoding The character encoding name used for the HTTP input character encoding conversion, HTTP output character encoding conversion, and the default character encoding for string functions defined by the mbstring module.
+	 *
+	 @note You should notice that the internal encoding is totally different from the one for multibyte regex.
+	 * 
+	 * @return If encoding is set, then Returns true on success or false on failure. In this case, the character encoding for multibyte regex is NOT changed. If encoding is omitted, then the current character encoding name is returned.
+	 */
+	public static function internal_encoding(?string $encoding = null):string|bool {
+		if (static::$has_mb){
+			return mb_internal_encoding($encoding);
+		} else {
+			if (null == $encoding){
+				return 'ISO-8859-1';
+			} else if ('ISO-8859-1' == static::toUpper($encoding)) {
+				return true;
+			}
+			return false;
+		}
+	}
+	
 	/** 
 	 * Find the position of the first occurrence of a case-insensitive substring in a string
 	 * 
@@ -748,7 +792,7 @@ class UStr{
 	 * @param $search - The string segment that is to be replaced.
 	 * @param $replace - The segment that is to replace the search segment.
 	 * @param $subject - The input string.
-	 * @param $&count - If passed, this will be set to the number of replacements performed.
+	 * @param &$count - If passed, this will be set to the number of replacements performed.
 	 * @param $encoding - Currently not used, present for consistency
 	 *
 	 * @return - string
@@ -939,8 +983,8 @@ class UStr{
 	/** 
 	 * Un-quote string quoted with addcslashes().
 	 * 
-	 * @param string The string to be unescaped.
-	 * @param encoding Not currently in use, here for consistency.
+	 * @param $string The string to be unescaped.
+	 * @param $encoding Not currently in use, here for consistency.
 	 * 
 	 * @return 
 	 */
@@ -986,8 +1030,8 @@ class UStr{
 	 * @brief Convert string to list of characters.
 	 * Converts a string to an array of characters.  Intereprets ".." between characters as a range. Converts escape sequences to their characters.
 	 *
-	 * @param string The string.
-	 * @param encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $string The string.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
 	 * @return An array of characters.
 	 */
@@ -1046,7 +1090,7 @@ class UStr{
 		if (static::$has_mb){
 			return mb_strToUpper($in, $encoding);
 		} else {
-			return strTUpper($in);
+			return strToUpper($in);
 		}
 	}
 
