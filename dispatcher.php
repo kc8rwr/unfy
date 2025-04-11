@@ -235,6 +235,14 @@ $input = array_merge( (is_array(@$_SESSION['messages'])?$_SESSION['messages']:ar
  */
 $_SESSION['messages'] = Array();
 
+//UStr::$has_mb = false;
+$test = "<b>& & & \U0001F925\u0040& & &</b>";
+hdd(UStr::lcfirst('BOB ATE THE COLD ICE CREAM  '));
+hd(UStr::stripcslashes($test));
+echo "<br/>\n";
+echo UStr::$has_mb ? 'HASIT' : 'HASITNOT';
+die();
+
 $cols = Table_test::getColumns();
 hdd(Table_test::toString());
 
