@@ -25,8 +25,10 @@ class UStr{
 
 	public static $has_mb = null;
 	
-	/// A string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
-	const SPACE_NEEDLE = " \n\r\t\v\f\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}";
+	/// A multibyte string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
+	const MB_SPACE_NEEDLE = " \n\r\t\v\f\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}";
+	/// A byte string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
+	const SB_SPACE_NEEDLE = " \n\r\t\v";
 	const CASE_LOWER = MB_CASE_LOWER;
 	const CASE_UPPER = MB_CASE_UPPER;
 	const CASE_TITLE = MB_CASE_TITLE;
@@ -96,7 +98,7 @@ class UStr{
 		if (static::$has_mb){ 
 			//from https://www.php.net/manual/en/function.strcasecmp.php comment by chris at cmbuckley dot co dot uk
 			$encoding = null == $encoding ? mb_internal_encoding() : $encoding;
-			return strcmp(mb_strtoupper($str1, $encoding), mb_strtoupper($str2, $encoding));
+			return strcmp(mb_strtoupper($string1, $encoding), mb_strtoupper($string2, $encoding));
 		} else {
 			return strcasecmp($string1, $string2);
 		}
@@ -283,6 +285,30 @@ class UStr{
 			return strcspn($string, $characters, $offset, $length);
 		}
 	}
+
+	/** 
+	 * Set/Get character encoding detection order.
+	 * 
+	 * @param encoding encoding is an array or comma separated list of character encoding. If encoding is omitted or null, it returns the current character encoding detection order as array.
+	 *
+	 * @note This setting affects mb_detect_encoding() and mb_send_mail().
+	 *
+	 * @return When setting the encoding detection order, true is returned on success or false on failure. When getting the encoding detection order, an ordered array of the encodings is returned.
+	 */
+	public static function detect_order(array|string|null $encoding = null):array|bool {
+		if (static::$has_mb){
+			return mb_detect_order($encoding);
+		} else {
+			if (is_null($encoding)){
+				return array('ISO-8859-1');
+			} else {
+				if (is_array($encoding) && 1 == count($encoding)){
+					$encoding = $encoding[0];
+				}
+				return is_string($encoding) && 'ISO_8859_1' == static::toUpper($encoding);
+			}
+		}
+	}
 	
 	/** 
 	 * Does the haystack string end with the contents of the needle string?
@@ -332,6 +358,96 @@ class UStr{
 	}
 
 	/** 
+	 * Get internal settings of mbstring.
+	 * 
+	 * @param $type Which setting to return, not specified or 'all' to return an array of all the settings.
+	 * - internal_encoding
+	 * - http_input
+	 * - http_output
+	 * - http_output_conv_mimetypes
+	 * - mail_charset
+	 * - mail_header_encoding
+	 * - mail_body_encoding
+	 * - illegal_chars
+	 * - encoding_translation
+	 * - language
+	 * - detect_order
+	 * - substitute_character
+	 * - strict_detection
+	 * 
+	 * @return An array of type information if type is not specified, otherwise a specific type, or false on failure.
+	 */
+	public static function get_info(string $type = "all"):array|string|int|false|null { //FIXME
+		if (static::$has_mb){
+			return mb_get_info($type);
+		} else {
+			switch (static::toLower($type)){
+				case 'all':
+					$keys = array(
+						'internal_encoding',
+						'http_output',
+						'http_output_conv_mimetypes',
+						'mail_charset',
+						'mail_header_encoding',
+						'mail_body_encoding',
+						'illegal_chars',
+						'encoding_translation',
+						'language',
+						'detect_order',
+						'substitute_character',
+						'strict_detection',
+					);
+					$output = array();
+					foreach ($keys AS $key){
+						$output[$key] = static::get_info($key);
+					}
+					return $output;
+					break;
+				case 'detect_order':
+					return static::detect_order();
+					break;
+				case 'encoding_translation':
+					return 'Off';
+					break;
+				case 'http_input':
+					return static::http_input();
+					break;
+				case 'http_output':
+					return static::http_output();
+					break;
+				case 'http_output_conv_mimetypes':
+					return 'a^';
+					break;
+				case 'illegal_chars':
+					return 0;
+					break;
+				case 'internal_encoding':
+					return static::internal_encoding();
+					break;
+				case 'language':
+					return static::language();
+					break;
+				case 'mail_charset':
+					return 'ISO-8859-1';
+					break;
+				case 'mail_body_encoding':
+				case 'mail_header_encoding':
+					return 'BASE64';
+					break;
+				case 'strict_detection':
+					return 'Off';
+					break;
+				case 'substitute_character':
+					return 63;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
+	}
+	
+	/** 
 	 * @brief Convert HTML entities to their corresponding characters.
 	 *
 	 * More precisely, this function decodes all the entities (including all numeric entities) that a) are necessarily valid for the chosen document type — i.e., for XML,
@@ -350,9 +466,8 @@ class UStr{
 
 	/** 
 	 * @brief Convert all applicable characters to HTML entities.
+	 * This function is identical to htmlspecialchars() in all ways, except with htmlentities(), all characters which have HTML character entity equivalents are translated into these entities. The get_html_translation_table() function can be used to return the translation table used dependent upon the provided flags constants.
 	 *
-	 * This function is identical to htmlspecialchars() in all ways, except with htmlentities(), all characters which have HTML character entity equivalents are translated
-	 * into these entities. The get_html_translation_table() function can be used to return the translation table used dependent upon the provided flags constants.
 	 * @note If you want to decode instead (the reverse) you can use Ustr::html_entity_decode().
 	 * @param $string The input string.
 	 * @param $flags A bitmask of one or more of the following flags, which specify how to handle quotes, invalid code unit sequences and the used document type.  The default is ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401. 
@@ -564,6 +679,28 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * Is a string all whitespace characters?
+	 * 
+	 * @param $string The string to check.
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.	 
+	 * 
+	 * @return Returns true if the string is empty or all whitespace, otherwise false.
+	 */
+	public static function isWhitespace(string $string, ?string $encoding=null):bool {
+		$whitespace = static::SB_SPACE_NEEDLE;
+		if (static::$has_mb){
+			$whitespace = static::MB_SPACE_NEEDLE;
+		}
+		$arString = static::toCharList($string, $encoding);
+		foreach ($arString AS $char){
+			if (!static::contains($whitespace, $char, true, $encoding)){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/** 
 	 * Recursively convert an object to a json string.
 	 * 
 	 * @param $src - The source object.
@@ -611,6 +748,26 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * @brief Get/Set the current language.
+	 * Gets or sets the current language for sending emails if mbstring is installed. Otherwise just here for compatiblity, always returns neutral and only allows setting neutral.
+	 * 
+	 * @param $language Used for encoding e-mail messages.
+	 * 
+	 * @return If language is set and language is valid, it returns true. Otherwise, it returns false. When language is omitted or null, it returns the language name as a string.
+	 */
+	public static function language(?string $language = null):string|bool {
+		if (static::$has_mb){
+			return mb_language($language);
+		} else {
+			if (null == $language){
+				return 'neutral';
+			} else {
+				return static::toLower($language) == 'neutral';
+			}
+		}
+	}
+	
+	/** 
 	 * Make a string's first character lowercase.
 	 * 
 	 * @param $string The string to uppercase.
@@ -620,7 +777,13 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function lcfirst(string $string, ?string $encoding=null): string {
 		if (static::$has_mb){
-			return mb_lcfirst($string, $encoding);
+			if (function_exists('mb_lcfirst')){
+				return mb_lcfirst($string, $encoding);
+			} else {
+				$output = static::toLower(static::substr($string, 0, 1));
+				$output .= static::substr($string, 1);
+				return $output;
+			}
 		} else {
 			return lcfirst($string);
 		}
@@ -642,6 +805,20 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		}
 	}
 
+	/** 
+	 * Returns an array of all supported encodings.
+	 * 
+	 * 
+	 * @return Returns a numerically indexed array.
+	 */
+	public static function list_encodings():array {
+		if (static::$has_mb){
+			return mb_list_encodings();
+		} else {
+			return array('ISO-8859-1');
+		}
+	}
+	
 	/** 
 	 *  @brief Strip whitespace from the beginning of a string.
 	 * 
@@ -684,7 +861,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function ltrim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
-			$needles = SPACE_NEEDLE;
+			$needles = static::MB_SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
 		if (static::$has_mb){
@@ -746,9 +923,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function parse(string $string, array &$result, ?string $encoding=null):bool {
 		if (static::$has_mb){
-			 return mb_parse_str($string, $array);
+			 return mb_parse_str($string, $result);
 		 } else {
-			 parse_str($string, $array);
+			 parse_str($string, $result);
 			 return true;
 		 }
 	}
@@ -882,7 +1059,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function rtrim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
-			$needles = SPACE_NEEDLE;
+			$needles = static::MB_SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
 		if (static::$has_mb){
@@ -1136,7 +1313,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function trim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
-			$needles = SPACE_NEEDLE;
+			$needles = static::MB_SPACE_NEEDLE;
 		}
 		if (empty($haystack)) return $haystack;
 		if (static::$has_mb){
@@ -1206,7 +1383,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function ucwords(string $string, ?string $separators=null, ?string $encoding=null): string {
 		if (null == $separators) {
-			$separators = SPACE_NEEDLE;
+			$separators = static::MB_SPACE_NEEDLE;
 		}
 		if (static::$has_mb){
 			$output = '';
