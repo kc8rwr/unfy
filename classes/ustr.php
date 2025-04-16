@@ -194,7 +194,7 @@ class UStr{
 	 */
 	public static function contains(string $haystack, string $needle, bool $caseSensitive=true, ?string $encoding=null):bool {
 		if (!$caseSensitive){
-			return static::contains(Static::toLower($haystack), Static::toLower($needle), $encoding);
+			return static::contains(Static::tolower($haystack), Static::tolower($needle), $encoding);
 		}
 		if (function_exists('str_contains')){
 			return str_contains($haystack, $needle);
@@ -305,7 +305,7 @@ class UStr{
 				if (is_array($encoding) && 1 == count($encoding)){
 					$encoding = $encoding[0];
 				}
-				return is_string($encoding) && 'ISO_8859_1' == static::toUpper($encoding);
+				return is_string($encoding) && 'ISO_8859_1' == static::toupper($encoding);
 			}
 		}
 	}
@@ -322,7 +322,7 @@ class UStr{
 	 */
 	public static function ends_with(string $haystack, string $needle, bool $caseSensitive=true, ?string $encoding=null):bool {
 		if (!$caseSensitive){
-			return static::ends_with(static::toLower($haystack, $encoding), static::toLower($needle, $encoding), true);
+			return static::ends_with(static::tolower($haystack, $encoding), static::tolower($needle, $encoding), true);
 		}
 		if (function_exists('str_ends_with')){
 			return str_ends_with($haystack, $needle);
@@ -381,7 +381,7 @@ class UStr{
 		if (static::$has_mb){
 			return mb_get_info($type);
 		} else {
-			switch (static::toLower($type)){
+			switch (static::tolower($type)){
 				case 'all':
 					$keys = array(
 						'internal_encoding',
@@ -438,7 +438,7 @@ class UStr{
 					return 'Off';
 					break;
 				case 'substitute_character':
-					return 63;
+					return static::substitute_character();
 					break;
 				default:
 					return false;
@@ -571,7 +571,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		} else {
 			if (null == $encoding){
 				return 'ISO-8859-1';
-			} else if ('ISO-8859-1' == static::toUpper($encoding)) {
+			} else if ('ISO-8859-1' == static::toupper($encoding)) {
 				return true;
 			}
 			return false;
@@ -611,7 +611,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		} else {
 			if (null == $encoding){
 				return 'ISO-8859-1';
-			} else if ('ISO-8859-1' == static::toUpper($encoding)) {
+			} else if ('ISO-8859-1' == static::toupper($encoding)) {
 				return true;
 			}
 			return false;
@@ -686,7 +686,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * 
 	 * @return Returns true if the string is empty or all whitespace, otherwise false.
 	 */
-	public static function isWhitespace(string $string, ?string $encoding=null):bool {
+	public static function is_whitespace(string $string, ?string $encoding=null):bool {
 		$whitespace = static::SB_SPACE_NEEDLE;
 		if (static::$has_mb){
 			$whitespace = static::MB_SPACE_NEEDLE;
@@ -762,7 +762,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			if (null == $language){
 				return 'neutral';
 			} else {
-				return static::toLower($language) == 'neutral';
+				return static::tolower($language) == 'neutral';
 			}
 		}
 	}
@@ -780,7 +780,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			if (function_exists('mb_lcfirst')){
 				return mb_lcfirst($string, $encoding);
 			} else {
-				$output = static::toLower(static::substr($string, 0, 1));
+				$output = static::tolower(static::substr($string, 0, 1));
 				$output .= static::substr($string, 1);
 				return $output;
 			}
@@ -906,7 +906,45 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function pad(string $string, int $length, string $pad_string=' ', int $pad_type=STR_PAD_RIGHT, ?string $encoding=null):string {
 		if (static::$has_mb){
-			return mb_str_pad($string, $length, $pad_string, $pad_type, $encoding);
+			if (function_exists('mb_str_pad')){
+				return mb_str_pad($string, $length, $pad_string, $pad_type, $encoding);
+			} else {
+				$padleft = true;
+				$padright = true;
+				switch ($pad_type){
+					case STR_PAD_RIGHT:
+						$padleft = false;
+						break;
+					case STR_PAD_LEFT:
+						$padright = false;
+						break;
+					case STR_PAD_BOTH:
+						break;
+					default:
+						throw new ValueError('str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH ');
+						break;
+				}
+				$output = $string;
+				$output_len = static::len($output, $encoding);
+				if ($output_len < $length){
+					$pad_index = 0;
+					$pad_len = static::len($pad_string, $encoding);
+					while ($output_len < $length){
+						$pad_char = static::substr($pad_string, $pad_index, 1, $encoding);
+						$pad_index++;
+						$pad_index = $pad_index>=$pad_len ? 0 : $pad_index;
+						if ($padright){
+							$output .= $pad_char;
+							$output_len++;
+						}
+						if ($padleft && $output_len < $length){
+							$output = $pad_char . $output;
+							$output_len++;
+						}
+					}
+				}
+				return $output;
+			}
 		} else {
 			return str_pad($string, $length, $pad_string, $pad_type);
 		}
@@ -1082,18 +1120,18 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 *
 	 * @return A new string made up of the input string's characters shuffled into a random order.
 	 */
-	public function shuffle(string $string, ?string $encoding=null):string {
+	public static function shuffle(string $string, ?string $encoding=null):string {
 		if (static::$has_mb){
 			$output = '';
 			$arString = static::split($string, 1, $encoding);
-			while (0 < $chars = len($arString)){
+			while (0 < $chars = count($arString)){
 				$i = 1 == $chars ? 0 : rand(0, $chars-1);
 				$output .= $arString[$i];
 				array_splice($arString, $i, 1);
 			}
 			return $output;
 		} else {
-			return str_shufle($string);
+			return str_shuffle($string);
 		}
 	}
 	
@@ -1126,7 +1164,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function starts_with(string $haystack, string $needle, bool $caseSensitive=true, ?string $encoding=null):bool {
 		if (!$caseSensitive){
-			return static::starts_with(static::toLower($haystack), static::toLower($needle));
+			return static::starts_with(static::tolower($haystack), static::tolower($needle));
 		}
 		if (function_exists('str_starts_with')){
 			return str_starts_with($haystack, $needle);
@@ -1177,7 +1215,36 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		$output = stripcslashes($output);
 		return $output;
 	}
-
+	
+	/** 
+	 * @brief Set/Get substitution character.
+	 * Specifies a substitution character when input character encoding is invalid or character code does not exist in output character encoding. Invalid characters may be substituted "none" (no output), string or int value (Unicode character code value).
+	 *
+	 * @param substitute_character Specify the Unicode value as an int, or as one of the following strings:
+	 * - "none": no output
+	 * - "long": Output character code value (Example: U+3000, JIS+7E7E)
+	 * - "entity": Output character entity (Example: &#x200;)
+	 * 
+	 * @return If substitute_character is set, it returns true for success, otherwise returns false. If substitute_character is not set, it returns the current setting. 
+	 */
+	public static function substitute_character(string|int|null $substitute_character=null):string|int|bool {
+		if (static::$has_mb){
+			return mb_substitute_character($substitute_character);
+		} else {
+			switch ($substitute_character){
+				case null:
+					return 63;
+					break;
+				case 63:
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
+	}
+	
 	/** 
 	 * Return part of a string
 	 * 
@@ -1247,7 +1314,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 *
 	 * @return Lowercased output string.
 	 */
-	public static function toLower(string $in, ?string $encoding=null):string {
+	public static function tolower(string $in, ?string $encoding=null):string {
 		if (static::$has_mb){
 			return mb_strToLower($in, $encoding);
 		} else {
@@ -1263,7 +1330,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * 
 	 * @return - Uppercased output string.
 	 */
-	public static function toUpper(string $in, ?string $encoding=null):string {
+	public static function toupper(string $in, ?string $encoding=null):string {
 		if (static::$has_mb){
 			return mb_strToUpper($in, $encoding);
 		} else {
@@ -1338,7 +1405,11 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 */
 	public static function ucfirst(string $string, ?string $encoding=null): string {
 		if (static::$has_mb){
-			return mb_ucfirst($string, $encoding);
+			if (function_exists('mb_ucfirst')){
+				return mb_ucfirst($string, $encoding);
+			} else {
+				return static::toupper(static::substr($string, 0, 1)).static::substr($string, 1);
+			}
 		} else {
 			return ucfirst($string);
 		}
