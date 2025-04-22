@@ -1151,6 +1151,41 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			return str_split($string, $length);
 		}
 	}
+
+	/** 
+	 * Finds the length of the initial segment of a string consisting entirely of characters contained within a given mask.
+	 * 
+	 * @param string The string to examine. 
+	 * @param characters The list of allowable characters.
+	 * @param offset The position in string to start searching.
+	 * - If offset is given and is non-negative, then strspn() will begin examining string at the offset'th position. For instance, in the string 'abcdef', the character at position 0 is 'a', the character at position 2 is 'c', and so forth.
+	 * - If offset is given and is negative, then strspn() will begin examining string at the offset'th position from the end of string.
+	 * @param length The length of the segment from string to examine.
+	 * - If length is given and is non-negative, then string will be examined for length characters after the starting position.
+	 * - If length is given and is negative, then string will be examined from the starting position up to length characters from the end of string.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns the length of the initial segment of string which consists entirely of characters in characters. 
+	 */
+	public static function spn(string $string, string $characters, int $offset=0, ?int $length=null, ?string $encoding=null):int {
+		if (static::$has_mb){
+			if (!(is_null($length)&&0==$offset)){
+				$string = static::substr($string, $offset, $length, $encoding);
+			}
+			$characters = static::toCharList($characters, $encoding);
+			$len = static::len($string, $encoding);
+			for ($i=0; $i<$len; $i++){
+				$output = $i;
+				$char = static::substr($string, $i, 1, $encoding);
+				if(!in_array($char, $characters)){
+					break;
+				}
+			}
+			return $i;
+		} else {
+			return strspn($string, $characters, $offset, $length);
+		}
+	}
 	
 	/** 
 	 * Does the haystack string begin with the contents of the needle string?
