@@ -289,7 +289,7 @@ class UStr{
 	/** 
 	 * Set/Get character encoding detection order.
 	 * 
-	 * @param encoding encoding is an array or comma separated list of character encoding. If encoding is omitted or null, it returns the current character encoding detection order as array.
+	 * @param $encoding encoding is an array or comma separated list of character encoding. If encoding is omitted or null, it returns the current character encoding detection order as array.
 	 *
 	 * @note This setting affects mb_detect_encoding() and mb_send_mail().
 	 *
@@ -1155,12 +1155,12 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	/** 
 	 * Finds the length of the initial segment of a string consisting entirely of characters contained within a given mask.
 	 * 
-	 * @param string The string to examine. 
-	 * @param characters The list of allowable characters.
-	 * @param offset The position in string to start searching.
+	 * @param $string The string to examine. 
+	 * @param $characters The list of allowable characters.
+	 * @param $offset The position in string to start searching.
 	 * - If offset is given and is non-negative, then strspn() will begin examining string at the offset'th position. For instance, in the string 'abcdef', the character at position 0 is 'a', the character at position 2 is 'c', and so forth.
 	 * - If offset is given and is negative, then strspn() will begin examining string at the offset'th position from the end of string.
-	 * @param length The length of the segment from string to examine.
+	 * @param $length The length of the segment from string to examine.
 	 * - If length is given and is non-negative, then string will be examined for length characters after the starting position.
 	 * - If length is given and is negative, then string will be examined from the starting position up to length characters from the end of string.
 	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
@@ -1217,6 +1217,27 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		}
 	}
 
+	/** 
+	 * @brief Finds first occurrence of a string within another.
+	 * Finds the first occurrence of needle in haystack and returns the portion of haystack. If needle is not found, it returns false.
+	 * 
+	 * @param $haystack The string from which to get the first occurrence of needle.
+	 * @param $needle The string to find in haystack.
+	 * @param $before_needle Determines which portion of haystack this function returns.
+	 * - If set to true, it returns all of haystack from the beginning to the first occurrence of needle (excluding needle).
+	 * - If set to false, it returns all of haystack from the first occurrence of needle to the end (including needle).
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns the portion of haystack, or false if needle is not found.
+	 */
+	public static function str(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null):string|false {
+		if (static::$has_mb){
+			return mb_strstr($haystack, $needle, $before_needle, $encoding);
+		} else {
+			return strstr($haystack, $needle, $before_needle);
+		}
+	}
+	
 	/** 
 	 * Strip HTML and PHP tags from a string.
 	 *
@@ -1503,6 +1524,24 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			return ucwords($string);
 		}
 	}	
-	
+
+	/** 
+	 * @brief Return the width of a string.
+	 * Returns sum of character widths in a string where halfwidth characters count as 1, and fullwidth characters count as 2.
+	 *
+	 * @note Without mbstring all characters are treated as halfwidth.
+	 *
+	 * @param $string The string being measured.
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns the width of string string.
+	 */
+	public static function width(string $string, ?string $encoding = null):int {
+		if (static::$has_mb){
+			return mb_strwidth($string, $encoding);
+		} else {
+			return strlen($string);
+		}
+	}
 }
 ?>
