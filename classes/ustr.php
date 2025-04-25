@@ -126,7 +126,7 @@ class UStr{
 	 * @param $in The code point.
 	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - string The character.
+	 * @return string The character.
 	 */
 	public static function chr(int $in, ?string $encoding=null): string {
 		if (static::$has_mb){
@@ -624,9 +624,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $haystack - The string to be searched.
 	 * @param $needle - The string to search for.
 	 * @param $offset - If specified, search will start this number of characters counted from the beginning of the string. If the offset is negative, the search will start this number of characters counted from the end of the string.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
-	 * @return - Position number or false if not found as an int.
+	 * @return Position number or false if not found as an int.
 	 */
 	public static function ipos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = false;
@@ -647,7 +647,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $&count - If passed, this will be set to the number of replacements performed.
 	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - string
+	 * @return string
 	 */
 	public static function ireplace(array|string $search, array|string $replace, string|array $subject, int &$count=null, ?string $encoding=null){
 		if (false && static::$has_mb){
@@ -855,9 +855,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * - "\u3000": IDEOGRAPHIC SPACE.
 	 * - "\u0085": NEXT LINE (NEL).
 	 * - "\u180E": MONGOLIAN VOWEL SEPARATOR.
-	 * @param $encoding - Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
-	 * @return - The trimmed result string.
+	 * @return The trimmed result string.
 	 */
 	public static function ltrim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
@@ -880,7 +880,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * Get code point of a character.
 	/ * 
 	 * @param $string The string whose first character's code point should be returned.
-	 * @param $encoding - Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
 	 * @return 
 	 */
@@ -900,7 +900,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @parm pad_string The string to use as padding.
 	 * @note The pad_string may be truncated if the required number of padding characters can't be evenly divided by the pad_string's length.
 	 * @param $pad_type Optional argument pad_type can be STR_PAD_RIGHT, STR_PAD_LEFT, or STR_PAD_BOTH. By default STR_PAD_RIGHT.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
 	 * @return The padded string. 
 	 */
@@ -955,7 +955,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * 
 	 * @param $string The urlencoded data.  
 	 * @param $result An array containing decoded and character encoded converted values.
-	 * @param $encoding - Currently not used, present for consistency
+	 * @param $encoding Currently not used, present for consistency
 	 *
 	 * @return With multibyte - true/false success/failure or without multibyte always true.
 	 */
@@ -974,9 +974,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $haystack - The string to be searched.
 	 * @param $needle - The string to search for.
 	 * @param $offset - If specified, search will start this number of characters counted from the beginning of the string. If the offset is negative, the search will start this number of characters counted from the end of the string.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - Position number or false if not found as an int.
+	 * @return Position number or false if not found as an int.
 	 */
 	public static function pos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = false;
@@ -993,7 +993,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * 
 	 * @param $string The string to be repeated.
 	 * @param $times  How many times to repeat it.
-	 * @param $encoding - Unncessary for this method, only included to match other UStr methods.
+	 * @param $encoding Unncessary for this method, only included to match other UStr methods.
 	 *
 	 * @return A string consisting of $string repeated $times times.
 	 */
@@ -1008,9 +1008,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $replace - The segment that is to replace the search segment.
 	 * @param $subject - The input string.
 	 * @param &$count - If passed, this will be set to the number of replacements performed.
-	 * @param $encoding - Currently not used, present for consistency
+	 * @param $encoding Currently not used, present for consistency
 	 *
-	 * @return - string
+	 * @return string
 	 */
 	public static function replace(array|string $search, array|string $replace, string|array $subject, int &$count=null, ?string $encoding=null):string|array {
 		return str_replace($search, $replace, $subject, $count);
@@ -1022,9 +1022,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $haystack - The string to be searched.
 	 * @param $needle - The string to search for.
 	 * @param $offset - Where to begin the search.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - Position as an int or false if not found.
+	 * @return Position as an int or false if not found.
 	 */
 	public static function ripos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = null;
@@ -1044,9 +1044,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $offset - Where to begin the search.
 	 * - If zero or positive, the search is performed left to right skipping the first offset bytes of the haystack.
 	 * - If negative, the search starts offset bytes from the right instead of from the beginning of haystack. The search is performed right to left, searching for the first occurrence of needle from the selected byte.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - Position as an int or false if not found.
+	 * @return Position as an int or false if not found.
 	 */
 	public static function rpos(string $haystack, string $needle, int $offset=0, ?string $encoding=null):int|false {
 		$output = null;
@@ -1093,7 +1093,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * - "\u3000": IDEOGRAPHIC SPACE.
 	 * - "\u0085": NEXT LINE (NEL).
 	 * - "\u180E": MONGOLIAN VOWEL SEPARATOR.
-	 * @param $encoding Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.	 * @return - string the trimmed result. 
+	 * @param $encoding Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.	 * @return string the trimmed result. 
 	 */
 	public static function rtrim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
@@ -1142,7 +1142,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * @param $length Charachter length of split sections.
 	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - array of strings
+	 * @return array of strings
 	 */
 	public static function split(string $string, int $length=1, ?string $encoding=null): array {
 		if (static::$has_mb){
@@ -1316,7 +1316,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * - If length is omitted or null, the substring starting from offset until the end of the string will be returned
 	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - string
+	 * @return string
 	 */
 	public static function substr(string $in, int $offset, ?int $length=null, ?string $encoding=null):string {
 		if (static::$has_mb){
@@ -1366,7 +1366,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * Generate a lowercase version of the string
 	 * 
 	 * @param $in - Input string to be converted.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
 	 * @return Lowercased output string.
 	 */
@@ -1382,9 +1382,9 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * Generate an uppercase version of the string
 	 * 
 	 * @param $in Input string.
-	 * @param $encoding - Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return - Uppercased output string.
+	 * @return Uppercased output string.
 	 */
 	public static function toupper(string $in, ?string $encoding=null):string {
 		if (static::$has_mb){
@@ -1394,6 +1394,41 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		}
 	}
 
+	/** 
+	 * @brief Translate characters or replace substrings.
+	 * - If given three arguments ($encoding not included), this function returns a copy of string where all occurrences of each character in from have been translated to the corresponding character in to, i.e., every occurrence of $from[$n] has been replaced with $to[$n], where $n is a valid offset in both arguments.
+	 * If they have different lengths, the extra characters in the longer of the two are ignored. The length of string will be the same as the return value's.
+	 * - If given two arguments ($encoding not included), the second should be an array in the form array('from' => 'to', ...). The return value is a string where all the occurrences of the array keys have been replaced by the corresponding values. The longest keys will be tried first. Once a substring has been replaced, its new value will not be searched again.
+	 * The keys and the values may have any length, provided that there is no empty key; additionally, the length of the return value may differ from that of string. However, this function will be the most efficient when all the keys have the same size.
+	 *
+	 * @param $string The string being translated.
+	 * @param $from The string being translated to or an array in which case it's in the form array('from' => 'to', ...).
+	 * @param $to The string replacing from or null if $from is an array.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns the translated string.
+	 */
+	public static function tr(string $string, string|array $from, ?string $to=null, ?string $encoding=null):string {
+		if (is_array($from)){
+			return (strtr($string, $from));
+		}		
+		if (static::$has_mb){
+			if (is_null($to)){
+				throw new TypeError('Argument #3, $to must be of type string, null given');
+			} else {
+				$key_len = min(static::len($from, $encoding), static::len($to, $encoding));
+				$replace_pairs = array();
+				for ($i=0; $i<$key_len; $i++){
+					$char_from = static::substr($from, $i, 1, $encoding);
+					$char_to = static::substr($to, $i, 1, $encoding);
+					$replace_pairs[$char_from] = $char_to;
+				}
+				return(strtr($string, $replace_pairs));
+			}
+		} else {
+			return strtr($string, $from, $to);
+		}
+	}
 
 	/** 
 	 *  @brief Strip whitespace from the beginning and end of a string.
@@ -1432,7 +1467,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * - "\u180E": MONGOLIAN VOWEL SEPARATOR.
 	 * @param $encoding Used only if multibyte support is installed and PHP >= 8.4. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 *
-	 * @return - The trimmed result string.
+	 * @return The trimmed result string.
 	 */
 	public static function trim(string $haystack, string $needles=null, ?string $encoding=null):string {
 		if (null == $needles) {
