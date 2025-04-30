@@ -1395,6 +1395,57 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * @brief Tokenize string.
+	 * Splits a string (string) into smaller strings (tokens), with each token being delimited by any character from token. That is, if you have a string like "This is an example string" you could tokenize this string into its individual words by using the space character as the token.
+	 *
+	 * @note Only the first call to strtok uses the string argument. Every subsequent call to strtok only needs the token to use, as it keeps track of where it is in the current string. To start over, or to tokenize a new string you simply call strtok with the string argument again to initialize it. Note that you may put multiple tokens in the token parameter. The string will be tokenized when any one of the characters in the token argument is found.
+	 * 
+	 * @param $string The string being split up into smaller strings (tokens).
+	 * @param $token The delimiter used when splitting up string. 
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.	 
+	 * 
+	 * @return A string token, or false if no more tokens are available.
+	 */
+	public static function tok(string $token, ?string $string=null, ?string $encoding=null):string|false{
+		if (static::$has_mb){
+			if (empty($token)){
+				return false;
+			}
+			if (is_null($string)){
+				$string = static::$tokString;
+			} else {
+				static::$tokString = $string;
+			}
+			if (empty($string)){
+				return false;
+			}
+			$ar_token = static::toCharlist($token, $encoding);
+			$len = static::len($string, $encoding);
+			$bucket = '';
+			for ($i=0; $i<$len; $i++){
+				$char = static::substr($string, $i, 1, $encoding);
+				if (in_array($char, $ar_token)){
+					if (!empty($bucket)){
+						static::$tokString = static::substr($string, $i, $len, $encoding);
+						return $bucket;
+					}
+				} else {
+					$bucket .= $char;
+				}
+			}
+			static::$tokString = null;
+			return empty($bucket) ? false : $bucket;
+		} else {
+			if (is_null($string)){
+				return strtok($token, $string);
+			} else {
+				return strtok($string, $token);
+			}
+		}
+	}
+	private static ?string $tokString = null;
+	
+	/** 
 	 * @brief Translate characters or replace substrings.
 	 * - If given three arguments ($encoding not included), this function returns a copy of string where all occurrences of each character in from have been translated to the corresponding character in to, i.e., every occurrence of $from[$n] has been replaced with $to[$n], where $n is a valid offset in both arguments.
 	 * If they have different lengths, the extra characters in the longer of the two are ignored. The length of string will be the same as the return value's.
