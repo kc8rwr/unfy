@@ -27,6 +27,7 @@ class UStr{
 	
 	/// A multibyte string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
 	const MB_SPACE_NEEDLE = " \n\r\t\v\f\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}";
+	const MB_WORD_SEPARATOR = " \n\r\t\v\f\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}=+*/\\.;:[]{}()<>&%$@#^!?,~";
 	/// A byte string containing known 'whitespace' characters, used by trim, ltrim, rtrim methods
 	const SB_SPACE_NEEDLE = " \n\r\t\v";
 	const CASE_LOWER = MB_CASE_LOWER;
@@ -1627,6 +1628,85 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			return mb_strwidth($string, $encoding);
 		} else {
 			return strlen($string);
+		}
+	}
+
+	/** 
+	 * @brief Return information about words used in a string.
+	 * Counts the number of words inside string. If the optional format is not specified, then the return value will be an integer representing the number of words found. In the event the format is specified, the return value will be an array, content of which is dependent on the format. The possible value for the format and the resultant outputs are listed below.
+	 *
+	 * @note For the purpose of this function, 'word' is defined as a string containing alphabetic characters, which also may contain, but not start with "'" and "-" characters. 
+	 *
+	 * @warning This function may still require some more tweaking regarding which letters are and are not part of a word for multibyte strings.
+	 *
+	 * @param $string The string.
+	 * @param $format Specify the return value of this function. The current supported values are:
+	 * - 0 - returns the number of words found
+	 * - 1 - returns an array containing all the words found inside the string
+	 * - 2 - returns an associative array, where the key is the numeric position of the word inside the string and the value is the actual word itself
+	 * @param $characters A list of characters that would otherwise split a word but should not. 
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns an array or an integer, depending on the format chosen.
+	 */
+	public static function word_count(string $string, int $format=0, ?string $characters=null, ?string $encoding=null):array|int {
+		if (static::$has_mb){
+			$ar_characters = empty($characters) ? array() : static::toCharList($characters, $encoding);
+			$ar_space = static::toCharList(static::MB_WORD_SEPARATOR, $encoding);
+			$len = static::len($string, $encoding);
+			switch ($format) {
+				case 0: //returns the number of words found
+					$count = 0;
+					$counted = false;
+					for ($i=0; $i<$len; $i++){
+						$char = static::substr($string, $i, 1, $encoding);
+						if (in_array($char, $ar_space) && !in_array($char, $ar_characters)){
+							$counted = false;
+						} else if(!$counted){
+							$count++;
+							$counted = true;
+						}
+					}
+					return $count;
+					break;
+				case 1: //returns an array containing all the words
+				case 2: //returns an associative array, value is word, key is position in string
+					$output = array();
+					$word = '';
+					$pos = -1;
+					for ($i=0; $i<$len; $i++){
+						$char = static::substr($string, $i, 1, $encoding);
+						if (in_array($char, $ar_space) && !in_array($char, $ar_characters)){
+							if (!empty($word)){
+								if (2 == $format){
+									$output[$pos] = $word;
+								} else {
+									$output[] = $word;
+								}
+								$word = '';
+								$pos = -1;
+							}
+						} else {
+							$pos = $i;
+							$word .= $char;
+						}
+					}
+					if (!empty($word)){
+						if (2 == $format){
+							$output[$pos] = $word;
+						} else {
+							$output[] = $word;
+						}
+					}
+					return $output;
+					break;
+				default:
+					throw new ValueError('Argument #2 ($format) must be a valid format value');
+					break;
+			}
+			return 0;
+		} else {
+			return str_word_count($string, $format, $characters);
 		}
 	}
 }
