@@ -1328,12 +1328,37 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * Count the number of substring occurences.
+	 * 
+	 * @param $haystack The string to search in.
+	 * @param $needle The substring to search for.
+	 * @param $offset The offset where to start counting. If the offset is negative, counting starts from the end of the string. 
+	 * @param $length The maximum length after the specified offset to search for the substring. It outputs a warning if the offset plus the length is greater than the haystack length. A negative length counts from the end of haystack.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return This function returns an int, the number of times the needle substring occurs in the haystack string.
+	 */
+	public static function substr_count(string $haystack, string $needle, int $offset=0, ?int $length=null, ?string $encoding=null):int {
+		if (static::$has_mb) {
+			if (!(0==$offset && is_null($length))){
+				if (static::len($haystack, $encoding) < ($offset+(is_null($length)?0:$length))){
+					throw new ValueError('UStr::substr_count(): Argument #4 ($length) must be contained in argument #1 ($haystack)');
+				}
+				$haystack = static::substr($haystack, $offset, $length, $encoding);
+			}
+			return mb_substr_count($haystack, $needle, $encoding);
+		} else {
+			return substr_count($haystack, $needle, $offset, $length);
+		}
+	}
+	
+	/** 
 	 * @brief Convert string to list of characters.
 	 * Converts a string to an array of characters.  Intereprets ".." between characters as a range. Converts escape sequences to their characters.
 	 *
 	 * @param $string The string.
 	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
-	 * 
+ 	 * 
 	 * @return An array of characters.
 	 */
 	public static function toCharList(string $string, ?string $encoding = null):array {
