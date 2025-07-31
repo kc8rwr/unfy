@@ -13,6 +13,7 @@ function ht($message){
 	$output = htmlentities($output);
 	$output = UStr::replace(" ", '&nbsp;', $output);
 	$output = UStr::replace("\t", '&nbsp;&nbsp;&nbsp;', $output);
+	$output .= "\n";
 	$output = nl2br($output);
 	return $output;
 }
