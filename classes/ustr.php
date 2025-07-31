@@ -1038,6 +1038,60 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * Rotates each character of a string by $distance characters within it's block.
+	 * @note If the block contains an odd number of characters do not rotate the greatest character. This way rotations which cancel themselves out (like rot13 w/ Latin) still work.
+	 * 
+	 * @param distance If integer, how many places to shift the character. If it takes the character past the end of the block wrap around. Do so multiple times if necessary. If a float between 0 and 1 then multiply this by the number of characters in the block (skipping the last one if it is odd). Round to nearest. Rotate that many places. Reason for this is 0.5 then has the same self-canceling effect for all blocks as 13 does for the Latin alphabet.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return 
+	 */
+	public static function rot(string $string, int|float $distance=null, ?string $encoding=null):string {
+		if (0 == Static::len($string, $encoding)){
+			return $string;
+		}
+		if (0 < $distance-floor($distance)){ //for franctional distances lets get rid of any whole part as that would just wrap around anyway
+			$distance = $distance-floor($distance);
+		}
+		$output = '';
+		$block = null;
+		$end = Static::len($string);
+		$cur_distance = 0;
+		$block_len = 0;
+		$end_cap = 0;
+		for ($i=0; $i<$end; $i++){
+			$char = Static::substr($string, $i, 1, $encoding);
+			$char = UStr::ord($char);
+			if (null==$block || $char<$block->start || $char>$block->end){
+				$block = UCharBlock::FindAlpha($char);
+				if (null != $block){
+					$block_len = $block->count;
+					$end_cap =  0;
+					if (1 == $block_len % 2) {
+						$end_cap = $block->end;
+						$block_len--;
+					}
+					if (0 == $distance - floor($distance)){
+						$cur_distance = $distance;
+					} else {
+						$cur_distance = round($block_len * $distance);
+					}
+				}
+			}
+			if (null == $block || $char == $end_cap){
+				$output .= UStr::chr($char);
+			} else {
+				$char += $cur_distance;
+				if ($char >= ($block->start + $block_len)){
+					$char -= $block_len;
+				}
+				$output .= UStr::chr($char);
+			}
+		}
+		return $output;
+	}
+	
+	/** 
 	 * Find the position of the last occurrence of a substring in a string
 	 * 
 	 * @param $haystack - The string to be searched.
@@ -1328,6 +1382,48 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * @brief Binary safe comparison of two strings from an offset, up to length characters.
+	 * Compares haystack from position offset with needle up to length characters.
+	 * 
+	 * @param $haystack The main string being compared. 
+	 * @param $needle The secondary string being compared.
+	 * @param $offset The start position for the comparison. If negative, it starts counting from the end of the string.
+	 * @param $length The length of the comparison. The default value is the largest of the length of the needle compared to the length of haystack minus the offset.
+	 * @param $case_insensitive If case_sensitive is true comparison is case insensitive.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns a value less than 0 if string1 is less than string2; a value greater than 0 if string1 is greater than string2, and 0 if they are equal. No particular meaning can be reliably inferred from the value aside from its sign.
+	 */
+	public static function substr_compare(
+		string $haystack,
+		string $needle,
+		int $offset,
+		?int $length = null,
+		bool $case_insensitive = false,
+		?string $encoding = null
+	): int {
+		if (static::$has_mb){
+			$hay_len = static::len($haystack, $encoding);
+			$ned_len = static::len($needle, $encoding);
+			$start = 0 > $offset ? ($offset + $hay_len) : $offset;
+			$start = min($hay_len-1, $start);
+			$start = max($start, 0);
+			if (is_null($length)){
+				$length = $hay_len - $offset;
+				$length = max($end, $ned_len);
+			}
+			if (0 > $length){
+				throw new ValueError('UStr::substr_count(): Argument #4 ($length) must be greater than or equal to 0');
+			}
+			$target = static::substr($haystack, $start, $length, $encoding);
+			$ned = static::substr($needle, 0, $length, $encoding);
+			return static::cmp($target, $ned, $encoding);
+		} else {
+			return substr_compare($haystack, $needle,  $offset, $length, $case_insensitive);
+		}
+	}
+	
+	/** 
 	 * Count the number of substring occurences.
 	 * 
 	 * @param $haystack The string to search in.
@@ -1349,6 +1445,71 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			return mb_substr_count($haystack, $needle, $encoding);
 		} else {
 			return substr_count($haystack, $needle, $offset, $length);
+		}
+	}
+
+	/** 
+	 * Replace text within a portion of a string.
+	 * 
+	 * @param $string The input string. An array of strings can be provided, in which case the replacements will occur on each string in turn. In this case, the replace, offset and length parameters may be provided either as scalar values to be applied to each input string in turn, or as arrays, in which case the corresponding array element will be used for each input string.
+	 * @param $replace The replacement string. 
+	 * @param $offset If offset is non-negative, the replacing will begin at the offset'th offset into string. If offset is negative, the replacing will begin at the offset'th character from the end of string.
+	 * @param $length If given and is positive, it represents the length of the portion of string which is to be replaced. If it is negative, it represents the number of characters from the end of string at which to stop replacing. If it is not given, then it will default to strlen( string ); i.e. end the replacing at the end of string. Of course, if length is zero then this function will have the effect of inserting replace into string at the given offset offset.
+	 * 
+	 * @return The result string is returned. If string is an array then array is returned. 
+	 */
+	public static function substr_replace(
+		array|string $string,
+		array|string $replace,
+		array|int $offset,
+		array|int|null $length=null,
+		?string $encoding=null
+	):string|array {
+		if (static::$has_mb){
+			if (is_array($string)){
+				$output = array();
+				for ($i = 0; $i < count($string); $i++){
+					$i_string = $string[$i];
+					$i_replace = $replace;
+					if (is_array($replace)){
+						$i_replace = $i < count($replace) ? $replace[$i] : null;
+					}
+					$i_offset = $offset;
+					if (is_array($offset)){
+						$i_offset = $i < count($offset) ? $offset[$i] : null;
+					}
+					$i_length = $length;
+					if (is_array($length)){
+						$i_length = $i < count($length) ? $length[$i] : null;
+					}
+					$output[] = static::substr_replace($string, $replace, $offset, $length, $encoding);
+				}
+				return $output;
+			} else {
+				$replace = is_array($replace) ? $replace[0] : $replace;
+				$offset = is_array($offset) ? $offset[0] : $offset;
+				$length = is_array($length) ? $length[0] : $length;
+				$len_string = static::len($string, $encoding);
+				$offset = 0 > $offset ? ($len_string + $offset) : $offset;
+				$offset = max(0, $offset);
+				if (0 > $length){
+					$end = $length + $len_string;
+					$end = max($end, $offset);
+				} else {
+					$end = $offset + $length;
+				}
+				$output = '';
+				if (!is_null($offset)){
+					$output .= static::substr($string, 0, $offset);
+				}
+				$output .= $replace;
+				if (!is_null($length)){
+					$output .= static::substr($string, $end);
+				}
+				return $output;
+			}
+		} else {
+			return substr_replace($string, $replace, $offset, $length);
 		}
 	}
 	
