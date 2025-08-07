@@ -14,7 +14,7 @@
 class UCharBlock {
 	public readonly string $type;
 	public readonly string $name;
-	public readonly bool $isCapital;
+	public readonly ?bool $isCapital;
 	public readonly int $start;
 	public readonly int $end;
 	public readonly string $notes;
@@ -43,7 +43,9 @@ class UCharBlock {
 		}
 		if (is_int($character))
 		{
-			if ($character > 0x0040 && $character < 0x005B){ //Latin Upper
+			if ($character > 0x0029 && $character < 0x0040) {
+				$output = new UCharBlock('number', 'Numeric Digit', null, 0x0030, 0x0039);
+			} else if ($character > 0x0040 && $character < 0x005B){ //Latin Upper
 				$output = new UCharBlock('alpha', 'Latin Capital', true, 0x0041, 0x005A);
 			} else if ($character > 0x0060 && $character < 0x007B){ //Latin Lower
 				$output = new UCharBlock('alpha', 'Latin Lower', false, 0x0061, 0x007A);

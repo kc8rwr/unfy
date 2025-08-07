@@ -598,6 +598,38 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
+	 * @short Increments a single character within it's block.
+	 *
+	 * Returns an array with the input character incremented by one within it's block and whether it there was a carry.
+	 * 
+	 * @param char
+	 * @param $encoding Not currently used, present for consistency.
+	 * 
+	 * @return An array with the incremented character as the first element. A bool true it there was a carry, false if not.
+	 * @throws ValueError if character is empty or is not found within a known alphabet, number of ideographic block
+	 */
+	public static function increment_character(string $char, ?string $encoding=null):array {
+		$carry = false;
+		if (0 == Static::len($char, $encoding)){
+			throw new ValueError('Argument #1 ($char) cannot be empty');
+		} else {
+			$char = Static::ord($char);
+			$block = UCharBlock::FindAlpha($char);
+			if (null == $block){
+				throw new ValueError('Argument #1 ($char) must be a character from an alphanumeric and ideographic blocks');
+			} else {
+				$char++;
+				if ($char > $block->end){
+					$carry = true;
+					$char = $block->start;
+				}
+			}
+			$char = Static::chr($char);
+		}
+		return array($char, $carry);
+	}
+	
+	/** 
 	 * Set/Get internal character encoding.
 	 * 
 	 * @param $internal_encoding The character encoding name used for the HTTP input character encoding conversion, HTTP output character encoding conversion, and the default character encoding for string functions defined by the mbstring module.
@@ -1043,7 +1075,8 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 * 
 	 * @param distance If integer, how many places to shift the character. If it takes the character past the end of the block wrap around. Do so multiple times if necessary. If a float between 0 and 1 then multiply this by the number of characters in the block (skipping the last one if it is odd). Round to nearest. Rotate that many places. Reason for this is 0.5 then has the same self-canceling effect for all blocks as 13 does for the Latin alphabet.
 	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
-	 * 
+	 *
+	 * @warning Substitution cyphers should not be relied on for any form of security. Rotation cyphers in particular should not be used for anything important.
 	 * @return 
 	 */
 	public static function rot(string $string, int|float $distance=null, ?string $encoding=null):string {
