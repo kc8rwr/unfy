@@ -288,6 +288,49 @@ class UStr{
 	}
 
 	/** 
+	 * Decrements a numeric or alphanumeric string.
+	 * 
+	 * @param $string The string to be decremented.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return The decremented string.
+	 * @throws ValueError if character is empty or is not found within a known alphabet, number of ideographic block
+	 */
+	public static function decrement(string $string, ?string $encoding=null):string{
+		if (0 == Static::len($string, $encoding)){
+			throw new ValueError('Argument #1 ($string) cannot be empty');
+		}
+		$block = null;
+		$borrow = true;
+		$output = '';
+		for ($i = static::len($string, $encoding) - 1; $i > -1; $i--){
+			$char = static::substr($string, $i, 1, $encoding);
+			$charnum = static::ord($char, $encoding);
+			if (is_null($block) || $charnum < $block->start || $charnum > $block->end){
+				$block = UCharBlock::FindAlpha($charnum);
+			}
+			if (null == $block || ($block->type != 'alpha' && $block->type != 'number')){
+				throw new ValueError('Argument #1 ($string) must consist entirely of characters from alphanumeric blocks.');
+			}
+			if ($borrow){
+				$borrow = false;
+				$charnum--;
+				if ($charnum < $block->start){
+					$borrow = true;
+					$charnum = $block->end;
+				}
+				$output = static::chr($charnum, $encoding) . $output;
+			} else {
+				$output = $char . $output;
+			}
+		}
+		if ($borrow || ('number' == $block->type && static::ord($output, $encoding)) == $block->start){
+			$output = static::substr($output, 1, null, $encoding);
+		}
+		return $output;
+	}
+
+	/** 
 	 * Set/Get character encoding detection order.
 	 * 
 	 * @param $encoding encoding is an array or comma separated list of character encoding. If encoding is omitted or null, it returns the current character encoding detection order as array.
@@ -598,35 +641,50 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	}
 
 	/** 
-	 * @short Increments a single character within it's block.
-	 *
-	 * Returns an array with the input character incremented by one within it's block and whether it there was a carry.
+	 * Increments a numeric or alphanumeric string.
 	 * 
-	 * @param char
-	 * @param $encoding Not currently used, present for consistency.
+	 * @param $string The string to be incremented.
+	 * @param $encoding Used only if multibyte support is installed. The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
 	 * 
-	 * @return An array with the incremented character as the first element. A bool true it there was a carry, false if not.
+	 * @return The incremented string.
 	 * @throws ValueError if character is empty or is not found within a known alphabet, number of ideographic block
 	 */
-	public static function increment_character(string $char, ?string $encoding=null):array {
-		$carry = false;
-		if (0 == Static::len($char, $encoding)){
-			throw new ValueError('Argument #1 ($char) cannot be empty');
-		} else {
-			$char = Static::ord($char);
-			$block = UCharBlock::FindAlpha($char);
-			if (null == $block){
-				throw new ValueError('Argument #1 ($char) must be a character from an alphanumeric and ideographic blocks');
-			} else {
-				$char++;
-				if ($char > $block->end){
-					$carry = true;
-					$char = $block->start;
-				}
-			}
-			$char = Static::chr($char);
+	public static function increment(string $string, ?string $encoding=null):string{
+		if (0 == Static::len($string, $encoding)){
+			throw new ValueError('Argument #1 ($string) cannot be empty');
 		}
-		return array($char, $carry);
+		$block = null;
+		$carry = true;
+		$output = '';
+		for ($i = static::len($string, $encoding) - 1; $i > -1; $i--){
+			$char = static::substr($string, $i, 1, $encoding);
+			$charnum = static::ord($char, $encoding);
+			if (is_null($block) || $charnum < $block->start || $charnum > $block->end){
+				$block = UCharBlock::FindAlpha($charnum);
+			}
+			if (null == $block || ($block->type != 'alpha' && $block->type != 'number')){
+				throw new ValueError('Argument #1 ($string) must consist entirely of characters from alphanumeric blocks.');
+			}
+			if ($carry){
+				$carry = false;
+				$charnum++;
+				if ($charnum > $block->end){
+					$carry = true;
+					$charnum = $block->start;
+				}
+				$output = static::chr($charnum, $encoding) . $output;
+			} else {
+				$output = $char . $output;
+			}
+		}
+		if ($carry && !is_null($block)){
+			$charnum = $block->start;
+			if ('number' == $block->type){
+				$charnum++;
+			}
+			$output = static::chr($charnum, $encoding) . $output;
+		}
+		return $output;
 	}
 	
 	/** 
