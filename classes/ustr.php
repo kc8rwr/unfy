@@ -401,6 +401,130 @@ class UStr{
 		return explode($separator, $string, $limit);
 	}
 
+
+	/** 
+	 * Split a string containing csv data into a 1 or 2-dimensional array.
+	 * Allows multi-character and/or multi-byte separator, enclosure and newline characters.
+	 * 
+	 * @param $string The input string.
+	 * @param $separator Characters that separate cells within a row.
+	 * @param $enclosure Characters that can enclose a cell's data, escapes everything inside including newlines.
+	 * @param $escape Character that escapes special characters (such as newline, enclosure, separator). If empty then doubling up the special character(s) escapes them.
+	 * @param $newline Character that divides rows, defaults null, if empty then process entire string as one row, return single dimenional array..
+	 * @param $strict_newline If false and if $newline is "\n" then also count "\r\n" as a newline.
+	 * @param $skip_empty_rows Do not enclude any empty rows in the output.
+	 * @param $encoding An optional argument defining the encoding used when converting characters.
+	 * 
+	 * @return A 1 or 2-dimensional array containing the parsed csv data. 
+	 */
+	public static function getcsv(
+		string $string,
+		string $separator = ',',
+		string $enclosure = "\"",
+		string $escape = null,
+		string $newline = null,
+		bool $strict_newline = false,
+		bool $skip_empty_rows = false,
+		string|null $encoding = null,
+	): array {
+		if (
+			((!is_null($separator)) && 1 < strlen($separator)) ||
+				((!is_null($enclosure)) && 1 < strlen($enclosure)) ||
+				is_null($escape) ||
+				1 < strlen($escape) ||
+				!empty($newline)
+		){ //single byte intentional
+			$output = array();
+			$len = static::len($string, $encoding);
+			$sep_len = static::len($separator, $encoding);
+			$enc_len = static::len($enclosure, $encoding);
+			$esc_len = static::len($escape, $encoding);
+			$nl_len = static::len($newline, $encoding);
+			$i = 0;
+			$enclosed = false;
+			$escaped = false;
+			$col = '';
+			$row = array();
+			while ($i < $len){
+				if ($enclosed){
+					if (static::substr($string, $i, $enc_len) == $enclosure){
+						$enclosed = false;
+						$i += $enc_len;
+					} else {
+						$col .= static::substr($string, $i, 1);
+						$i++;
+					}
+				} else { //if not currently enclosed
+					if ($escaped){
+						$escaped = false;
+						$col .= static::substr($string, $i, 1);
+						$i++;
+					} else { //if not escaped
+						if (0 < $esc_len && static::substr($string, $i, $esc_len) == $escape){
+							$escaped = true;
+							$i += $esc_len;
+						} elseif (0<$enc_len && static::substr($string, $i, $enc_len) == $enclosure){
+							if (0 == $esc_len && static::substr($string, $i+$enc_len, $enc_len) == $enclosure){
+								$col .= $enclosure;
+								$i += (2*$enc_len);
+							} else {
+								$enclosed = true;
+								$i += $enc_len;
+							}
+						} elseif (0<$sep_len && static::substr($string, $i, $sep_len) == $separator) {
+							if (0 == $esc_len && static::substr($string, $i+$sep_len, $sep_len) == $separator){
+								$col .= $separator;
+								$i += (2*$sep_len);
+							} else {
+								$row[] = $col;
+								$col = '';
+								$i += $sep_len;
+							}
+						} elseif (0 < $nl_len && static::substr($string, $i, $nl_len) == $newline) {
+							if (0 == $esc_len && static::substr($string, $i+$nl_len, $nl_len) == $newline){
+								$col .= $newline;
+								$i += (2*$nl_len);
+							} else {
+								if (!empty($col)){
+									$row[] = $col;
+								}
+								$col = '';
+								if (!($skip_empty_rows && 0 == count($row))){
+									$output[] = $row;
+								}
+								$row = array();
+								$i += $nl_len;
+							}
+						} elseif ((!$strict_newline) && "\n" == $newline && static::substr($string, $i, 2) == "\r\n"){
+							if (0 == $esc_len && static::substr($string, $i+2, 2) == "\r\n"){
+								$col .= "\r\n";
+								$i += 4;
+							} else {
+								if (!empty($col)){
+									$row[] = $col;
+								}
+								$col = '';
+								if (!($skip_empty_rows && 0 == count($row))){
+									$output[] = $row;
+								}
+								$row = array();
+								$i += 2;
+							}
+						} else {
+							$col .= static::substr($string, $i, 1);
+							$i++;
+						}
+					}
+				}
+			} //end while($i < $len)
+			if (!empty($col)) $row[] = $col;
+			if (0 < count($row)) $output[] = $row; //always skip empty row if at the end
+			return $output;
+		} else {
+			return str_getcsv($string, $separator, $enclosure, $escape);
+		}
+	}
+	
 	/** 
 	 * Get internal settings of mbstring.
 	 * 
@@ -888,8 +1012,10 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 	 *
 	 * @return integer
 	 */
-	public static function len(string $in, ?string $encoding=null):int {
-		if (static::$has_mb){
+	public static function len(?string $in, ?string $encoding=null):int {
+		if (is_null($in)){
+			return 0;
+		} elseif (static::$has_mb){
 			return mb_strlen($in, $encoding);
 		} else {
 			return strlen($in);
