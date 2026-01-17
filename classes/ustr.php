@@ -38,6 +38,10 @@ class UStr{
 	const CASE_UPPER_SIMPLE = MB_CASE_UPPER_SIMPLE;
 	const CASE_TITLE_SIMPLE = MB_CASE_TITLE_SIMPLE;
 	const CASE_FOLD_SIMPLE = MB_CASE_FOLD_SIMPLE;
+	const WRAP_CHAR = 0;
+	const WRAP_WORD = 1;
+	const WRAP_WHOLE_WORD = 2;
+	const WRAP_NOSPACE = 3;
 	
 	/** 
 	 * Quote string with slashes in a C style.
@@ -447,11 +451,11 @@ class UStr{
 			$row = array();
 			while ($i < $len){
 				if ($enclosed){
-					if (static::substr($string, $i, $enc_len) == $enclosure){
+					if (static::substr($string, $i, $enc_len, $encoding) == $enclosure){
 						$enclosed = false;
 						$i += $enc_len;
 					} else {
-						$col .= static::substr($string, $i, 1);
+						$col .= static::substr($string, $i, 1, $encoding);
 						$i++;
 					}
 				} else { //if not currently enclosed
@@ -1717,11 +1721,11 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 				}
 				$output = '';
 				if (!is_null($offset)){
-					$output .= static::substr($string, 0, $offset);
+					$output .= static::substr($string, 0, $offset, $encoding);
 				}
 				$output .= $replace;
 				if (!is_null($length)){
-					$output .= static::substr($string, $end);
+					$output .= static::substr($string, $end, encoding: $encoding);
 				}
 				return $output;
 			}
@@ -1954,7 +1958,7 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 			if (function_exists('mb_ucfirst')){
 				return mb_ucfirst($string, $encoding);
 			} else {
-				return static::toupper(static::substr($string, 0, 1)).static::substr($string, 1);
+				return static::toupper(static::substr($string, 0, 1, $encoding)).static::substr($string, 1, encoding: $encoding);
 			}
 		} else {
 			return ucfirst($string);
@@ -2111,6 +2115,205 @@ If encoding is set, mb_http_output() sets the HTTP output character encoding to 
 		} else {
 			return str_word_count($string, $format, $characters);
 		}
+	}
+
+	/** 
+	 * @brief Wrap a string to a given number of characters.
+	 * Wraps a string to a given number of characters using a string break character. Strings wrap after a space (U+0020) character unless cut_long_words is set to true.
+	 *
+	 * @param $string The input string.
+	 * @param $width The number of characters at which the string will be wrapped. 
+	 * @param $mode The mode by which the string should be wrapped. One of:
+	 * - UStr::WRAP_CHAR - wraps each line to exactly $width number of characters. Includes any whitespace in the original string, an output line may be shorter than $width if there were already break characters embedded in the original string.
+	 * - UStr::WRAP_WORD - Tries not to split words. fill a line until the next word would go over the width then starts a new line even if that leaves the current line short. Will split a word however if the word's length is greater than $width.
+	 * - UStr::UStr::WRAP_WHOLE_WORD - similar to WRAP_WORD however if a word is wider than $width, puts it on a single line by itself that is wide enough to fit it even though it is over $width characters.
+	 * - UStr::WRAP_NOSPACE - Strips all whitespace from the string then splits it up into lines exactly $width in length.
+	 * @param $break The line is broken using the optional break parameter. It must not be an empty string.
+	 * @param $ignoreCarriage If set to false then recognize both $break and "\r".$break as being breaks.
+	 * @param $encoding The encoding parameter is the character encoding. If it is omitted or null, the internal character encoding value will be used.
+	 * 
+	 * @return Returns the given string wrapped at the specified length.
+	 * @throws ValueError if $newLine is empty, $width < 1 or $mode is invalid.
+	 */
+	public static function wrap(string $string, int $width, int $mode, string $break="\n", bool $ignoreCarriage=false, $wordBreakChar = "-", $encoding = null){
+		if (empty($break)){
+			throw new ValueError('Argument #4, $break must not be empty.');
+		} else if (1 > $width){
+			throw new ValueError('Argument #2, $width must be greater than zero.');
+		} else if ($width <= static::len($wordBreakChar, $encoding)){
+			throw new ValueError('Argument #6, $wordBreak must not be longer by character count than Argument #2, $width.'); 
+		} else {
+			$output = '';
+			switch ($mode){
+				case UStr::WRAP_NOSPACE:
+					$len = 0;
+					for ($i = 0; $i < static::len($string, $encoding); $i++){
+						$char = static::substr($string, $i, 1, $encoding);
+						if (!static::is_whitespace($char, $encoding)){
+							$output .= $char;
+							$len++;
+						}
+						if ($len >= $width){
+							$output .= $break;
+							$len = 0;
+						}
+					}
+					break;
+				case UStr::WRAP_CHAR:
+					$line = '';
+					$line_len = 0;
+					$orig_len = static::len($string, $encoding);
+					$bk_len = static::len($break, $encoding);
+					$len = 0;
+					for ($i = 0; $i < $orig_len; $i++){
+						if ($break == static::substr($string, $i, $bk_len, $encoding)){
+							$output .= $line . $break;
+							$line = '';
+							$line_len = 0;
+							$i += $bk_len;
+						} else {
+							$char = static::substr($string, $i, 1, $encoding);
+							if ((!$ignoreCarriage) && "\r" == $char && $break == static::substr($string, $i+1, $bk_len, $encoding)){
+								$output .= $line . "\r" . $break;
+								$line = '';
+								$line_len = 0;
+								$i += $bk_len + 1;
+							} else {
+								$line .= $char;
+								$line_len++;
+								if ($line_len >= $width){
+									$output .= $break . $line;
+									$line = '';
+									$line_len = 0;
+								}
+							}
+						}
+					}
+					if (!empty($line)){
+						$output .= $break;
+						$output .= $line;
+					}
+					break;
+				case UStr::WRAP_WORD:
+				case UStr::WRAP_WHOLE_WORD:
+					$output = '';
+					$line = '';
+					$word = '';
+					$space = '';
+					$bk_0 = static::substr($break, 0, 1, $encoding);
+					$bk_tail = static::substr($break, 1, $encoding);
+					$bk_len = static::len($break, $encoding);
+					$this_break = '';
+					$new_word = false;
+					while (!empty($string)){
+						$char = substr($string, 0, 1);
+						if ((!$ignoreCarriage) && "\r" == $char && static::substr($string, 0, $bk_len, $encoding) == $break){ //handle "/r" . $break
+							$this_break = $space . "\r";
+							$string = static::substr($string, $bk_len, encoding: $encoding);			
+						} else if (($char . $bk_tail) == $break){//handle $break
+							$new_word = true;
+							$this_break = $break;
+							$string = static::substr($string, $bk_len-1, encoding: $encoding);
+						} else if (static::is_whitespace($char, $encoding)){ //handle space
+							$space .= $char;
+							$string = static::substr($string, 1);
+						} else { //handle a non-space character
+							if ('' == $space){
+								$word .= $char;
+								$string = static::substr($string, 1, encoding: $encoding);
+							} else {
+								$new_word = true;
+							}
+						}
+						if ($new_word){ //handle new word
+							$word_len = static::len($word, $encoding);
+							$line_len = static::len($line, $encoding);
+							switch ($mode){
+								case UStr::WRAP_WORD:
+									while (($word_len + $line_len) > $width){
+										$take_len = $width  - $line_len;
+										$output .= $line . static::substr($word, 0, $take_len, $encoding) . $break;
+										$word = static::substr($word, $take_len, encoding: $encoding);
+										$word_len -= $take_len;
+										$line = '';
+										$line_len = 0;
+									}
+									if (!empty($word)){
+										$line .= $word;
+										$word = '';
+									}
+									while (!empty($space)){
+										if (static::len($line, $encoding) >= $width){
+											$output .= $line . $break;
+											$line = '';
+										}
+										$line .= static::substr($space, 0, 1, $encoding);
+										$space = static::substr($space, 1, encoding: $encoding);
+									}
+									break;
+								case UStr::WRAP_WHOLE_WORD:
+									if (!empty($word)){
+										if (($line_len + $word_len) >= $width)
+										{
+											$output .= $line;
+											$output .= $break;
+											$line = '';
+										}
+										$line .= $word;
+										$word = '';
+									}
+									while (!empty($space)){
+										if (static::len($line, $encoding) >= $width){
+											$output .= $line . $break;
+											$line = '';
+										}
+										$line .= static::substr($space, 0, 1, $encoding);
+										$space = static::substr($space, 1, encoding: $encoding);
+									}
+									
+									break;
+							}
+							$word = '';
+							$space = '';
+							$this_break = '';
+							$new_word = false;
+						}
+					}
+					while (!empty($space)){
+						$line .= static::substr($space, 0, 1, $encoding);
+						$space = static::substr($space, 1, encoding: $encoding);
+						if (static::len($line, $encoding) >= $width){
+							$output .= $line . $break;
+							$line = '';
+						}
+					}
+					while (!empty($word)){
+						if ((!empty($line)) && static::len($line . $word, $encoding) >= $width){
+							$output .= $line . $break;
+							$line = '';
+						}
+						if ($mode == UStr::WRAP_WORD && static::len($word, $encoding) > $width){
+							$cpLen = $width - static::len($word, $encoding);
+							$line .= static::substr($word, 0, $cplen, $encoding);
+							$word = static::substr($word, $cplen, encoding:$encoding);
+						} else {
+							$line .= $word;
+							$word = '';
+						}
+						if (!empty($line)){
+							$output .= $line . $break;
+							$line = '';
+						}
+					}
+					
+					break;
+				default:
+					throw new ValueError('Argument #3 mode must be one of UStr::WRAP_CHAR, UStr::WRAP_WORD, UStr::WRAP_WHOLE_WORD or UStr::WRAP_NOSPACE');
+					break;
+			}
+		}
+
+		return $output;
 	}
 }
 ?>
